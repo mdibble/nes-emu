@@ -1,22 +1,20 @@
 use crate::cpu::CPU;
-use crate::bus::Bus;
 use crate::cartridge::Cartridge;
 
 pub struct NES {
-    cpu: CPU,
-    bus: Bus
+    cpu: CPU
 }
 
 impl NES {
     pub fn new() -> NES {
         let nes = NES {
-            cpu: CPU::new(),
-            bus: Bus::new()
+            cpu: CPU::new()
         };
         nes
     }
 
     pub fn insert_cartridge(&mut self, cartridge: Cartridge) {
-        self.bus.load_cartridge(cartridge);
+        self.cpu.bus.insert_cartridge(cartridge);
+        self.cpu.execute(0x00);
     }
 }

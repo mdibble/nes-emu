@@ -43,7 +43,7 @@ impl CPU {
     }
 
     pub fn brk(&mut self, mode: Mode) {
-
+        
     }
 
     pub fn bvc(&mut self, mode: Mode) {

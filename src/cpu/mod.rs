@@ -1,5 +1,8 @@
 mod addressing_modes;
 mod opcodes;
+
+use crate::bus::Bus;
+
 use addressing_modes::Mode;
 
 pub struct CPU {
@@ -8,7 +11,8 @@ pub struct CPU {
     y: u8,
     pc: u16,
     sp: u8,
-    p: u8
+    p: u8,
+    pub bus: Bus
 }
 
 impl CPU {
@@ -19,7 +23,8 @@ impl CPU {
             y: 0,
             pc: 0, // Haven't verified
             sp: 0xFD,
-            p: 0x34
+            p: 0x34,
+            bus: Bus::new()
         };
         cpu
     }
