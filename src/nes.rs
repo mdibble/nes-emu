@@ -15,6 +15,5 @@ impl NES {
 
     pub fn insert_cartridge(&mut self, cartridge: Cartridge) {
         self.cpu.bus.insert_cartridge(cartridge);
-        self.cpu.execute(0x00);
     }
 }

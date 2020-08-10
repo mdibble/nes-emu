@@ -1,7 +1,7 @@
 use crate::cartridge::Cartridge;
 
 pub struct Bus {
-    memory: [u8; 0x800],
+    memory: [u8; 0xFFFF],
     // ppu: PPU,
     // apu: APU
     cartridge: Cartridge
@@ -10,10 +10,14 @@ pub struct Bus {
 impl Bus {
     pub fn new() -> Bus {
         let bus = Bus {
-            memory: [0; 0x800],
+            memory: [0; 0xFFFF],
             cartridge: Cartridge::new()
         };
         bus
+    }
+
+    pub fn get_memory(&self, address: u16) -> u8 {
+        self.memory[address as usize]
     }
 
     pub fn insert_cartridge(&mut self, cartridge: Cartridge) {
