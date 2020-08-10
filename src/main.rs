@@ -4,6 +4,8 @@
 
 mod cartridge;
 mod nes;
+mod cpu;
+mod bus;
 
 use cartridge::Cartridge;
 use nes::NES;
@@ -13,5 +15,6 @@ fn main() {
     rom.inject("roms/donkey_kong.nes");
 
     let mut nes = NES::new();
+
     nes.insert_cartridge(rom);
 }
