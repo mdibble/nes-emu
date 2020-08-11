@@ -23,37 +23,36 @@ impl CPU {
     // Absolute
     // 16-bit address is retrived from the next two bytes in the program counter
     pub fn mode_abs(&mut self) -> u16 {
-        let left = self.bus.get_memory(self.pc) as u16;
+        let first_byte = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
-        let right = self.bus.get_memory(self.pc) as u16;
+        let second_byte = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
-        left << 4 | right
+        first_byte | second_byte << 8 // ssff
     }
 
     // Absolute X
     // 16-bit address is retrived from the next two bytes in the program counter offset by X
     pub fn mode_abx(&mut self) -> u16 {
-        let left = self.bus.get_memory(self.pc) as u16;
+        let first_byte = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
-        let right = self.bus.get_memory(self.pc) as u16;
+        let second_byte = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
-        (left << 4 | right) + self.x as u16
+        (first_byte | second_byte << 8) + self.x as u16 // ssff
     }
 
     // Absolute Y
     // 16-bit address is retrived from the next two bytes in the program counter offset by Y
     pub fn mode_aby(&mut self) -> u16 {
-        let left = self.bus.get_memory(self.pc) as u16;
+        let first_byte = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
-        let right = self.bus.get_memory(self.pc) as u16;
+        let second_byte = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
-        (left << 4 | right) + self.y as u16
+        (first_byte | second_byte << 8) + self.y as u16 // ssff
     }
 
     // Accumulator
     // Address is the accumulator, so no need to seek
     pub fn mode_acc(&mut self) -> u16 {
-        self.pc_increase();
         0
     }
 
@@ -68,50 +67,32 @@ impl CPU {
     // Implied
     // Address is implied, so no need to seek
     pub fn mode_imp(&mut self) -> u16 {
-        self.pc_increase();
         0
     }
 
     // Indirect
-    // Need to learn more about this mode, pretty confusing
+    // Used for JMP, essentially the same concept as pointers
     pub fn mode_ind(&mut self) -> u16 {
-        let address = self.bus.get_memory(self.pc + 1) as u16;
-        let low = self.bus.get_memory(address) as u16;
-        let high = if address & 0xFF == 0xFF {
-            self.bus.get_memory(address as u16 - 0xFF) as u16
-        } 
-        else {
-            self.bus.get_memory(address + 1) as u16
-        };
+        let first_byte = self.bus.get_memory(self.pc) as u16; // ff
+        self.pc_increase();
+        let second_byte = self.bus.get_memory(self.pc) as u16; // ss
+        self.pc_increase();
 
-        (high << 8) | low
+        let address = first_byte | second_byte << 8; // ssff
+
+        address 
     }
 
     // Indirect X-indexed
-    // I thought indirect was bad
+    // ???????????????
     pub fn mode_izx(&mut self) -> u16 {
-        let address = self.bus.get_memory(self.pc + 1);
-        let zp_low = address.wrapping_add(self.x);
-        let zp_high = zp_low.wrapping_add(1);
-        let zp_low_value = self.bus.get_memory(zp_low as u16) as u16;
-        let zp_high_value = self.bus.get_memory(zp_high as u16) as u16;
-
-        (zp_high_value << 8) | zp_low_value
+        0
     }
 
     // Indirect Y-indexed
-    // I thought indirect was bad
+    // ???????????????
     pub fn mode_izy(&mut self) -> u16 {
-        let address = self.bus.get_memory(self.pc + 1);
-        let zp_low = address;
-        let zp_high = zp_low.wrapping_add(1);
-        let zp_low_value = self.bus.get_memory(zp_low as u16) as u16;
-        let zp_high_value = self.bus.get_memory(zp_high as u16) as u16;
-
-        let old_address = (zp_high_value << 8) | zp_low_value;
-        let new_address = old_address.wrapping_add(self.y as u16);
-
-        new_address
+        0
     }
 
     // Relative
@@ -119,32 +100,34 @@ impl CPU {
     pub fn mode_rel(&mut self) -> u16 {
         let pc = self.pc;
         self.pc_increase();
-        self.pc + self.bus.get_memory(pc) as u16 // May cause overflow issues
-        // Should return a signed byte, which it does not.
+        return pc + (self.bus.get_memory(pc) - 128) as u16 // takes a signed byte
     }
 
     // Zero Page
     // Address is fetched from 8-bit address on the zero page
     pub fn mode_zp(&mut self) -> u16 {
         let pc = self.pc;
+        let byte = self.bus.get_memory(pc) as u16;
         self.pc_increase();
-        self.bus.get_memory(pc) as u16
+        self.bus.get_memory(byte) as u16
     }
 
     // Zero Page X-indexed
     // Address is fetched from 8-bit address on the zero page, offset by X
     pub fn mode_zpx(&mut self) -> u16 {
         let pc = self.pc;
+        let byte = self.bus.get_memory(pc) as u16;
         self.pc_increase();
-        self.bus.get_memory((pc + self.x as u16) % 256) as u16
+        self.bus.get_memory((byte + self.x as u16) % 256) as u16
     }
 
     // Zero Page Y-indexed
     // Address is fetched from 8-bit address on the zero page, offset by Y
     pub fn mode_zpy(&mut self) -> u16 {
         let pc = self.pc;
+        let byte = self.bus.get_memory(pc) as u16;
         self.pc_increase();
-        self.bus.get_memory((pc + self.y as u16) % 256) as u16
+        self.bus.get_memory((byte + self.y as u16) % 256) as u16
     }
 }
 
