@@ -17,7 +17,11 @@ impl Bus {
     }
 
     pub fn get_memory(&self, address: u16) -> u8 {
-        self.memory[address as usize]
+        self.memory[address as usize % 0xFFFF]
+    }
+
+    pub fn write_memory(&mut self, address: u16, contents: u8) {
+        self.memory[address as usize] = contents;
     }
 
     pub fn insert_cartridge(&mut self, cartridge: Cartridge) {

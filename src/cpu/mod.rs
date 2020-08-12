@@ -31,16 +31,11 @@ impl CPU {
         cpu
     }
 
-    pub fn reset() {
-
-    }
-
-    pub fn irq() {
-
-    }
-
-    pub fn nmi() {
-
+    pub fn tick(&mut self) {
+        let opcode = self.bus.get_memory(self.pc);
+        println!("${:x}: Executing {:x}", self.pc, opcode);
+        self.pc_increase();
+        self.execute(opcode);
     }
 
     pub fn pc_increase(&mut self) {
@@ -212,7 +207,7 @@ impl CPU {
         self.p = if state { self.p | 0b00000010 } else { self.p & 0b11111101 };
     }
 
-    pub fn set_interrupt(&mut self, state: bool) {
+    pub fn set_interrupt_disable(&mut self, state: bool) {
         self.p = if state { self.p | 0b00000100 } else { self.p & 0b11111011 };
     }
 
@@ -220,9 +215,17 @@ impl CPU {
         self.p = if state { self.p | 0b00001000 } else { self.p & 0b11110111 };
     }
 
+    pub fn set_b_01(&mut self, state: bool) {
+        self.p = if state { self.p | 0b00010000 } else { self.p & 0b11101111 };
+    }
+
+    pub fn set_b_10(&mut self, state: bool) {
+        self.p = if state { self.p | 0b00100000 } else { self.p & 0b11011111 };
+    }
+
     pub fn set_overflow(&mut self, state: bool) {
         self.p = if state { self.p | 0b01000000 } else { self.p & 0b10111111 };
-    }
+    } 
 
     pub fn set_negative(&mut self, state: bool) {
         self.p = if state { self.p | 0b10000000 } else { self.p & 0b01111111 };

@@ -12,9 +12,13 @@ use nes::NES;
 
 fn main() {
     let mut rom = Cartridge::new();
-    rom.inject("roms/donkey_kong.nes");
+    rom.inject("roms/nestest.nes");
 
     let mut nes = NES::new();
 
     nes.insert_cartridge(rom);
+
+    loop {
+        nes.cycle();
+    }
 }

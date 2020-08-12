@@ -16,4 +16,8 @@ impl NES {
     pub fn insert_cartridge(&mut self, cartridge: Cartridge) {
         self.cpu.bus.insert_cartridge(cartridge);
     }
+
+    pub fn cycle(&mut self) {
+        self.cpu.tick();
+    }
 }
