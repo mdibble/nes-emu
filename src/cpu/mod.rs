@@ -48,42 +48,6 @@ impl CPU {
         }
     }
 
-    pub fn load(&mut self) {
-        let mut count = 0;
-        self.bus.write_memory(0x8000 + count, 0xA2); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x0A); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x8E); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
-        self.bus.write_memory(0x8000 + count, 0xA2); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x03); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x8E); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x01); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
-        self.bus.write_memory(0x8000 + count, 0xAC); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
-        self.bus.write_memory(0x8000 + count, 0xA9); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x18); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x6D); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x01); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x88); count += 1;
-        self.bus.write_memory(0x8000 + count, 0xD0); count += 1;
-        self.bus.write_memory(0x8000 + count, 0xFA); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x8D); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x02); count += 1;
-        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
-        self.bus.write_memory(0x8000 + count, 0xEA); count += 1;
-        self.bus.write_memory(0x8000 + count, 0xEA); count += 1;
-        self.bus.write_memory(0x8000 + count, 0xEA);
-
-        self.bus.write_memory(0xFFFC, 0x00);
-        self.bus.write_memory(0xFFFD, 0x80);
-        self.reset();
-    }
-
     pub fn reset(&mut self) {
         self.a = 0;
         self.x = 0;

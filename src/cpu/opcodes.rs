@@ -24,21 +24,21 @@ impl CPU {
         let (address, _) = self.set_mode(mode);
 
         if address & 0b10000000 == 0b10000000 { self.set_carry(true); } else { self.set_carry(false); }
-        let result = self.bus.get_memory(address) << 1;
+        let mut result = self.bus.get_memory(address) << 1;
+        result &= 0xFF;
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
 
         if acc_mode == true {
             self.a = result;
-            if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
         }
-
         else {
             self.bus.write_memory(address, result);
         }
         0
     }
 
-    pub fn bcc(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+    pub fn bcc(&mut self, mode: Mode) -> u8 {
         let (address, mut extra_cycle) = self.set_mode(mode);
         if self.get_carry() == false {
             self.pc = address;
@@ -47,7 +47,7 @@ impl CPU {
         extra_cycle
     }
 
-    pub fn bcs(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+    pub fn bcs(&mut self, mode: Mode) -> u8 {
         let (address, mut extra_cycle) = self.set_mode(mode);
         if self.get_carry() == true {
             self.pc = address;
@@ -56,7 +56,7 @@ impl CPU {
         extra_cycle
     }
 
-    pub fn beq(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+    pub fn beq(&mut self, mode: Mode) -> u8 {
         let (address, mut extra_cycle) = self.set_mode(mode);
         if self.get_zero() == true {
             self.pc = address;
@@ -67,10 +67,14 @@ impl CPU {
 
     pub fn bit(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
+        let result = self.bus.get_memory(address) & self.a;
+        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        self.p = (self.p & 0x3F) | self.bus.get_memory(address) & 0xC0;
+        if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
         0
     }
 
-    pub fn bmi(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+    pub fn bmi(&mut self, mode: Mode) -> u8 { 
         let (address, mut extra_cycle) = self.set_mode(mode);
         if self.get_negative() == true {
             self.pc = address;
@@ -79,7 +83,7 @@ impl CPU {
         extra_cycle
     }
 
-    pub fn bne(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+    pub fn bne(&mut self, mode: Mode) -> u8 {
         let (address, mut extra_cycle) = self.set_mode(mode);
         if self.get_zero() == false {
             self.pc = address;
@@ -88,7 +92,7 @@ impl CPU {
         extra_cycle
     }
 
-    pub fn bpl(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+    pub fn bpl(&mut self, mode: Mode) -> u8 {
         let (address, mut extra_cycle) = self.set_mode(mode);
         if self.get_negative() == false {
             self.pc = address;
@@ -99,14 +103,16 @@ impl CPU {
 
     pub fn brk(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
+        // self.pc += 1;
         self.set_interrupt_disable(true);
         self.push((self.pc >> 8) as u8 & 0xFF);
         self.push(self.pc as u8 & 0xFF);
         self.push(self.p | 0x10);
+        self.pc = self.bus.get_memory(0xFFFE) as u16 | (self.bus.get_memory(0xFFFF) as u16) << 8;
         0
     }
 
-    pub fn bvc(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+    pub fn bvc(&mut self, mode: Mode) -> u8 {
         let (address, mut extra_cycle) = self.set_mode(mode);
         if self.get_overflow() == false {
             self.pc = address;
@@ -115,7 +121,7 @@ impl CPU {
         extra_cycle
     }
 
-    pub fn bvs(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+    pub fn bvs(&mut self, mode: Mode) -> u8 {
         let (address, mut extra_cycle) = self.set_mode(mode);
         if self.get_overflow() == true {
             self.pc = address;

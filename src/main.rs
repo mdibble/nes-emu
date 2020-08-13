@@ -17,7 +17,6 @@ fn main() {
     let mut nes = NES::new();
 
     nes.insert_cartridge(rom);
-    nes.load_cpu();
 
     loop {
         nes.cycle();

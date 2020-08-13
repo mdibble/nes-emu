@@ -20,8 +20,4 @@ impl NES {
     pub fn cycle(&mut self) {
         self.cpu.tick();
     }
-
-    pub fn load_cpu(&mut self) {
-        self.cpu.load();
-    }
 }

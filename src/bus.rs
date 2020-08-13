@@ -9,7 +9,7 @@ pub struct Bus {
 
 impl Bus {
     pub fn new() -> Bus {
-        let mut bus = Bus {
+        let bus = Bus {
             memory: [0; 0xFFFF],
             cartridge: Cartridge::new()
         };
