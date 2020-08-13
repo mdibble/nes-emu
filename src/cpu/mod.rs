@@ -23,9 +23,9 @@ impl CPU {
             a: 0,
             x: 0,
             y: 0,
-            pc: 0, // Haven't verified
+            pc: 0,
             sp: 0xFD,
-            p: 0x34,
+            p: 0x24,
             bus: Bus::new(),
         };
         cpu
@@ -40,6 +40,16 @@ impl CPU {
 
     pub fn pc_increase(&mut self) {
         self.pc = self.pc.wrapping_add(0x1);
+    }
+
+    pub fn push(&mut self, data: u8) {
+        self.bus.write_memory(0x100 + self.sp as u16, data);
+        self.sp = if self.sp == 0x00 { 0xFF } else { self.sp - 1 };
+    }
+
+    pub fn pop(&mut self) -> u8 {
+        self.sp = if self.sp == 0xFF { 0x00 } else { self.sp + 1 };
+        self.bus.get_memory(0x100 + self.sp as u16)
     }
 
     pub fn execute(&mut self, opcode: u8) {
@@ -199,35 +209,27 @@ impl CPU {
         };
     }
 
-    pub fn set_carry(&mut self, state: bool) {
-        self.p = if state { self.p | 0b00000001 } else { self.p & 0b11111110 };
-    }
+    pub fn set_carry(&mut self, state: bool) { self.p = if state { self.p | 0b00000001 } else { self.p & 0b11111110 }; }
+    pub fn get_carry(&self) -> bool { let val = if self.p & 0b00000001 == 0b00000001 { true } else { false }; val }
 
-    pub fn set_zero(&mut self, state: bool) {
-        self.p = if state { self.p | 0b00000010 } else { self.p & 0b11111101 };
-    }
+    pub fn set_zero(&mut self, state: bool) { self.p = if state { self.p | 0b00000010 } else { self.p & 0b11111101 }; }
+    pub fn get_zero(&self) -> bool { let val = if self.p & 0b00000010 == 0b00000010 { true } else { false }; val }
 
-    pub fn set_interrupt_disable(&mut self, state: bool) {
-        self.p = if state { self.p | 0b00000100 } else { self.p & 0b11111011 };
-    }
+    pub fn set_interrupt_disable(&mut self, state: bool) { self.p = if state { self.p | 0b00000100 } else { self.p & 0b11111011 }; }
+    pub fn get_interrupt_disable(&self) -> bool { let val = if self.p & 0b00000100 == 0b00000100 { true } else { false }; val }
 
-    pub fn set_decimal(&mut self, state: bool) {
-        self.p = if state { self.p | 0b00001000 } else { self.p & 0b11110111 };
-    }
+    pub fn set_decimal(&mut self, state: bool) { self.p = if state { self.p | 0b00001000 } else { self.p & 0b11110111 }; }
+    pub fn get_decimal(&self) -> bool { let val = if self.p & 0b00001000 == 0b00001000 { true } else { false }; val }
 
-    pub fn set_b_01(&mut self, state: bool) {
-        self.p = if state { self.p | 0b00010000 } else { self.p & 0b11101111 };
-    }
+    pub fn set_b_01(&mut self, state: bool) { self.p = if state { self.p | 0b00010000 } else { self.p & 0b11101111 }; }
+    pub fn get_b_01(&self) -> bool { let val = if self.p & 0b00010000 == 0b00010000 { true } else { false }; val }
 
-    pub fn set_b_10(&mut self, state: bool) {
-        self.p = if state { self.p | 0b00100000 } else { self.p & 0b11011111 };
-    }
+    pub fn set_b_10(&mut self, state: bool) { self.p = if state { self.p | 0b00100000 } else { self.p & 0b11011111 }; }
+    pub fn get_b_10(&self) -> bool { let val = if self.p & 0b00100000 == 0b00100000 { true } else { false }; val }
 
-    pub fn set_overflow(&mut self, state: bool) {
-        self.p = if state { self.p | 0b01000000 } else { self.p & 0b10111111 };
-    } 
+    pub fn set_overflow(&mut self, state: bool) { self.p = if state { self.p | 0b01000000 } else { self.p & 0b10111111 }; } 
+    pub fn get_overflow(&self) -> bool { let val = if self.p & 0b01000000 == 0b01000000 { true } else { false }; val }
 
-    pub fn set_negative(&mut self, state: bool) {
-        self.p = if state { self.p | 0b10000000 } else { self.p & 0b01111111 };
-    }
+    pub fn set_negative(&mut self, state: bool) { self.p = if state { self.p | 0b10000000 } else { self.p & 0b01111111 }; }
+    pub fn get_negative(&self) -> bool { let val = if self.p & 0b10000000 == 0b10000000 { true } else { false }; val }
 }

@@ -92,7 +92,7 @@ impl CPU {
     }
 
     // Indirect X-indexed (also known as Indexed Indirect)
-    // ???????????????
+    // Indirect but even more confusing (add the register to the address before you seek)
     pub fn mode_izx(&mut self) -> (u16, u8) {
         let param = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
@@ -106,7 +106,7 @@ impl CPU {
     }
 
     // Indirect Y-indexed (also known as Indirect Indexed)
-    // ???????????????
+    // Indirect but even more confusing (add the register to the address after you seek)
     // Can take an additional cycle
     pub fn mode_izy(&mut self) -> (u16, u8) {
         let param = self.bus.get_memory(self.pc) as u16;
@@ -117,7 +117,7 @@ impl CPU {
         let address = (first_byte | second_byte << 8) + self.y as u16;
         let extra_cycle = if (first_byte | second_byte << 8) % 256 == address % 256 { 0 } else { 1 };
 
-        (address, 1)
+        (address, extra_cycle)
     }
 
     // Relative
