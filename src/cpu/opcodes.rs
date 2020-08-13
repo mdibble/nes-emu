@@ -2,18 +2,20 @@ use crate::cpu::CPU;
 use super::addressing_modes::Mode;
 
 impl CPU {
-    pub fn adc(&mut self, mode: Mode) {
+    pub fn adc(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
+        extra_cycle
     }
 
-    pub fn and(&mut self, mode: Mode) {
+    pub fn and(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
         self.a = self.a & self.bus.get_memory(address);
         if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        extra_cycle
     }
 
-    pub fn asl(&mut self, mode: Mode) {
+    pub fn asl(&mut self, mode: Mode) -> u8 {
         let acc_mode = match mode {
             Mode::ACC => true,
             _ => false
@@ -33,295 +35,381 @@ impl CPU {
         else {
             self.bus.write_memory(address, result);
         }
+        0
     }
 
-    pub fn bcc(&mut self, mode: Mode) { // extra cycle if branching, two extra if on another page 
-        let (address, extra_cycle) = self.set_mode(mode);
+    pub fn bcc(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+        let (address, mut extra_cycle) = self.set_mode(mode);
+        if self.get_carry() == false {
+            self.pc = address;
+            extra_cycle += 1;
+        }
+        extra_cycle
     }
 
-    pub fn bcs(&mut self, mode: Mode) { // extra cycle if branching, two extra if on another page 
-        let (address, extra_cycle) = self.set_mode(mode);
+    pub fn bcs(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+        let (address, mut extra_cycle) = self.set_mode(mode);
+        if self.get_carry() == true {
+            self.pc = address;
+            extra_cycle += 1;
+        }
+        extra_cycle
     }
 
-    pub fn beq(&mut self, mode: Mode) { // extra cycle if branching, two extra if on another page 
-        let (address, extra_cycle) = self.set_mode(mode);
+    pub fn beq(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+        let (address, mut extra_cycle) = self.set_mode(mode);
+        if self.get_zero() == true {
+            self.pc = address;
+            extra_cycle += 1;
+        }
+        extra_cycle
     }
 
-    pub fn bit(&mut self, mode: Mode) {
+    pub fn bit(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
+        0
     }
 
-    pub fn bmi(&mut self, mode: Mode) { // extra cycle if branching, two extra if on another page 
-        let (address, extra_cycle) = self.set_mode(mode);
+    pub fn bmi(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+        let (address, mut extra_cycle) = self.set_mode(mode);
+        if self.get_negative() == true {
+            self.pc = address;
+            extra_cycle += 1;
+        }
+        extra_cycle
     }
 
-    pub fn bne(&mut self, mode: Mode) { // extra cycle if branching, two extra if on another page 
-        let (address, extra_cycle) = self.set_mode(mode);
+    pub fn bne(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+        let (address, mut extra_cycle) = self.set_mode(mode);
+        if self.get_zero() == false {
+            self.pc = address;
+            extra_cycle += 1;
+        }
+        extra_cycle
     }
 
-    pub fn bpl(&mut self, mode: Mode) { // extra cycle if branching, two extra if on another page 
-        let (address, extra_cycle) = self.set_mode(mode);
+    pub fn bpl(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+        let (address, mut extra_cycle) = self.set_mode(mode);
+        if self.get_negative() == false {
+            self.pc = address;
+            extra_cycle += 1;
+        }
+        extra_cycle
     }
 
-    pub fn brk(&mut self, mode: Mode) {
+    pub fn brk(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
+        0
     }
 
-    pub fn bvc(&mut self, mode: Mode) { // extra cycle if branching, two extra if on another page 
-        let (address, extra_cycle) = self.set_mode(mode);
+    pub fn bvc(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+        let (address, mut extra_cycle) = self.set_mode(mode);
+        if self.get_overflow() == false {
+            self.pc = address;
+            extra_cycle += 1;
+        }
+        extra_cycle
     }
 
-    pub fn bvs(&mut self, mode: Mode) { // extra cycle if branching, two extra if on another page 
-        let (address, extra_cycle) = self.set_mode(mode);
+    pub fn bvs(&mut self, mode: Mode) -> u8 { // extra cycle if branching, two extra if on another page 
+        let (address, mut extra_cycle) = self.set_mode(mode);
+        if self.get_overflow() == true {
+            self.pc = address;
+            extra_cycle += 1;
+        }
+        extra_cycle
     }
 
-    pub fn clc(&mut self, mode: Mode) {
+    pub fn clc(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.set_carry(false);
+        0
     }
 
-    pub fn cld(&mut self, mode: Mode) {
+    pub fn cld(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.set_decimal(false);
+        0
     }
 
-    pub fn cli(&mut self, mode: Mode) {
+    pub fn cli(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.set_interrupt_disable(false);
+        0
     }
 
-    pub fn clv(&mut self, mode: Mode) {
+    pub fn clv(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.set_overflow(false);
+        0
     }
 
-    pub fn cmp(&mut self, mode: Mode) {
+    pub fn cmp(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
         if self.a >= self.bus.get_memory(address) { self.set_carry(true); } else { self.set_carry(false); }
         if self.a == self.bus.get_memory(address) { self.set_zero(true); } else { self.set_zero(false); }
-        if self.a < self.bus.get_memory(address) { self.set_negative(true); } else { self.set_negative(false); } 
+        if self.a < self.bus.get_memory(address) { self.set_negative(true); } else { self.set_negative(false); }
+        extra_cycle
     }
 
-    pub fn cpx(&mut self, mode: Mode) {
+    pub fn cpx(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
         if self.x >= self.bus.get_memory(address) { self.set_carry(true); } else { self.set_carry(false); }
         if self.x == self.bus.get_memory(address) { self.set_zero(true); } else { self.set_zero(false); }
         if self.x < self.bus.get_memory(address) { self.set_negative(true); } else { self.set_negative(false); } 
+        0
     }
 
-    pub fn cpy(&mut self, mode: Mode) {
+    pub fn cpy(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
         if self.y >= self.bus.get_memory(address) { self.set_carry(true); } else { self.set_carry(false); }
         if self.y == self.bus.get_memory(address) { self.set_zero(true); } else { self.set_zero(false); }
         if self.y < self.bus.get_memory(address) { self.set_negative(true); } else { self.set_negative(false); } 
+        0
     }
 
-    pub fn dec(&mut self, mode: Mode) {
+    pub fn dec(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
         let new_value = self.bus.write_memory(address, self.bus.get_memory(address) - 1);
         if new_value == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if new_value & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn dex(&mut self, mode: Mode) {
+    pub fn dex(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.x -= 1;
         if self.x == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.x & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn dey(&mut self, mode: Mode) {
+    pub fn dey(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.y -= 1;
         if self.y == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.y & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn eor(&mut self, mode: Mode) {
+    pub fn eor(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
         self.a = self.a ^ self.bus.get_memory(address);
         if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        extra_cycle
     }
 
-    pub fn inc(&mut self, mode: Mode) {
+    pub fn inc(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
         let new_value = self.bus.write_memory(address, self.bus.get_memory(address) + 1);
         if new_value == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if new_value & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn inx(&mut self, mode: Mode) {
+    pub fn inx(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.x += 1;
         if self.x == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.x & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn iny(&mut self, mode: Mode) {
+    pub fn iny(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.y += 1;
         if self.y == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.y & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn jmp(&mut self, mode: Mode) {
+    pub fn jmp(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
         self.pc = address;
+        0
     }
 
-    pub fn jsr(&mut self, mode: Mode) {
+    pub fn jsr(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
         self.push(self.bus.get_memory(self.pc));
         self.pc = address;
+        0
     }
 
-    pub fn lda(&mut self, mode: Mode) {
+    pub fn lda(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
         self.a = self.bus.get_memory(address);
         if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        extra_cycle
     }
 
-    pub fn ldx(&mut self, mode: Mode) {
+    pub fn ldx(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
         self.x = self.bus.get_memory(address);
         if self.x == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.x & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        extra_cycle
     }
 
-    pub fn ldy(&mut self, mode: Mode) {
+    pub fn ldy(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
         self.y = self.bus.get_memory(address);
         if self.y == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.y & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        extra_cycle
     }
 
-    pub fn lsr(&mut self, mode: Mode) {
+    pub fn lsr(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
+        0
     }
 
-    pub fn nop(&mut self, mode: Mode) {
+    pub fn nop(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
+        0
     }
 
-    pub fn ora(&mut self, mode: Mode) {
+    pub fn ora(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
         self.a = self.a | self.bus.get_memory(address);
         if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        extra_cycle
     }
 
-    pub fn pha(&mut self, mode: Mode) {
+    pub fn pha(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.push(self.a);
+        0
     }
 
-    pub fn php(&mut self, mode: Mode) {
+    pub fn php(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.push(self.p);
+        0
     }
 
-    pub fn pla(&mut self, mode: Mode) {
+    pub fn pla(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.a = self.sp;
+        self.a = self.pop();
         if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn plp(&mut self, mode: Mode) {
+    pub fn plp(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.p = self.sp;
+        self.p = self.pop();
+        0
     }
 
-    pub fn rol(&mut self, mode: Mode) {
+    pub fn rol(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
+        0
     }
 
-    pub fn ror(&mut self, mode: Mode) {
+    pub fn ror(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
+        0
     }
 
-    pub fn rti(&mut self, mode: Mode) {
+    pub fn rti(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
+        0
     }
 
-    pub fn rts(&mut self, mode: Mode) {
+    pub fn rts(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.pc = self.bus.get_memory(self.sp as u16) as u16 - 1;
+        0
     }
 
-    pub fn sbc(&mut self, mode: Mode) {
+    pub fn sbc(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
+        extra_cycle
     }
 
-    pub fn sec(&mut self, mode: Mode) {
+    pub fn sec(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.set_carry(true);
+        0
     }
 
-    pub fn sed(&mut self, mode: Mode) {
+    pub fn sed(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.set_decimal(true);
+        0
     }
 
-    pub fn sei(&mut self, mode: Mode) {
+    pub fn sei(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.set_interrupt_disable(true);
+        0
     }
 
-    pub fn sta(&mut self, mode: Mode) {
+    pub fn sta(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
         self.bus.write_memory(address, self.a);
+        0
     }
 
-    pub fn stx(&mut self, mode: Mode) {
+    pub fn stx(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
         self.bus.write_memory(address, self.x);
+        0
     }
 
-    pub fn sty(&mut self, mode: Mode) {
+    pub fn sty(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
         self.bus.write_memory(address, self.y);
+        0
     }
 
-    pub fn tax(&mut self, mode: Mode) {
+    pub fn tax(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.x = self.a;
         if self.x == 0 { self.set_zero(true) } else { self.set_zero(false); }
         if self.x & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn tay(&mut self, mode: Mode) {
+    pub fn tay(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.y = self.a;
         if self.y == 0 { self.set_zero(true) } else { self.set_zero(false); }
         if self.y & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn tsx(&mut self, mode: Mode) {
+    pub fn tsx(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.x = self.bus.get_memory(self.sp as u16);
         if self.x == 0 { self.set_zero(true) } else { self.set_zero(false); }
         if self.x & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn txa(&mut self, mode: Mode) {
+    pub fn txa(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.a = self.x;
         if self.a == 0 { self.set_zero(true) } else { self.set_zero(false); }
         if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 
-    pub fn txs(&mut self, mode: Mode) {
+    pub fn txs(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.sp = self.x;
+        0
     }
 
-    pub fn tya(&mut self, mode: Mode) {
+    pub fn tya(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
         self.a = self.y;
         if self.a == 0 { self.set_zero(true) } else { self.set_zero(false); }
         if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        0
     }
 }

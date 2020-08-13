@@ -5,7 +5,7 @@ mod cycle_table;
 use crate::bus::Bus;
 
 use addressing_modes::Mode;
-use cycle_table::cycle_table;
+use cycle_table::CYCLE_TABLE;
 
 pub struct CPU {
     a: u8,
@@ -15,6 +15,7 @@ pub struct CPU {
     sp: u8,
     p: u8,
     pub bus: Bus,
+    cycles: u8
 }
 
 impl CPU {
@@ -27,15 +28,33 @@ impl CPU {
             sp: 0xFD,
             p: 0x24,
             bus: Bus::new(),
+            cycles: 0
         };
         cpu
     }
 
     pub fn tick(&mut self) {
-        let opcode = self.bus.get_memory(self.pc);
-        println!("${:x}: Executing {:x}", self.pc, opcode);
-        self.pc_increase();
-        self.execute(opcode);
+        if self.cycles == 0 {
+            println!("");
+            let opcode = self.bus.get_memory(self.pc);
+            print!("${:x}: \t{:x}\t", self.pc, opcode);
+            self.pc_increase();
+            self.cycles = self.execute(opcode) + CYCLE_TABLE[opcode as usize] as u8;
+        }
+        
+        else {
+            print!(" {}", self.cycles);
+
+            self.cycles -= 1;
+        }
+        
+        if self.pc > 32 { panic!("Done"); }
+    }
+
+    pub fn reset(&mut self) {
+        let first = self.bus.get_memory(0xFFFC) as u16;
+        let second = self.bus.get_memory(0xFFFC + 1) as u16;
+        self.pc = second << 8 | first;
     }
 
     pub fn pc_increase(&mut self) {
@@ -52,8 +71,8 @@ impl CPU {
         self.bus.get_memory(0x100 + self.sp as u16)
     }
 
-    pub fn execute(&mut self, opcode: u8) {
-        match opcode {
+    pub fn execute(&mut self, opcode: u8) -> u8 {
+        let cycle_count = match opcode {
             0x00 => self.brk(Mode::IMP),
             0x01 => self.ora(Mode::IZX),
             0x05 => self.ora(Mode::ZP),
@@ -207,6 +226,7 @@ impl CPU {
             0xFE => self.inc(Mode::ABX),
             _ => panic!("[0x{:x}] No opcode! Could be illegal, unimplemented, or both.", opcode)
         };
+        cycle_count
     }
 
     pub fn set_carry(&mut self, state: bool) { self.p = if state { self.p | 0b00000001 } else { self.p & 0b11111110 }; }
