@@ -99,6 +99,10 @@ impl CPU {
 
     pub fn brk(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
+        self.set_interrupt_disable(true);
+        self.push((self.pc >> 8) as u8 & 0xFF);
+        self.push(self.pc as u8 & 0xFF);
+        self.push(self.p | 0x10);
         0
     }
 
@@ -287,7 +291,7 @@ impl CPU {
 
     pub fn php(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.push(self.p);
+        self.push(self.p | 0x10);
         0
     }
 
@@ -317,12 +321,23 @@ impl CPU {
 
     pub fn rti(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
+        self.p = self.pop();
+
+        let lo = self.pop() as u16;
+        let hi = self.pop() as u16;
+
+        self.pc = (hi << 8) | lo;
         0
     }
 
     pub fn rts(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.pc = self.bus.get_memory(self.sp as u16) as u16 - 1;
+        self.p = self.pop();
+
+        let lo = self.pop() as u16;
+        let hi = self.pop() as u16;
+
+        self.pc = ((hi << 8) | lo) + 1;
         0
     }
 

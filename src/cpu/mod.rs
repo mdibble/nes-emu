@@ -37,24 +37,97 @@ impl CPU {
         if self.cycles == 0 {
             println!("");
             let opcode = self.bus.get_memory(self.pc);
-            print!("${:x}: \t{:x}\t", self.pc, opcode);
+            print!("${:x}: \t0x{:x}\tCycles: ", self.pc, opcode);
             self.pc_increase();
             self.cycles = self.execute(opcode) + CYCLE_TABLE[opcode as usize] as u8;
+            print!("{} {}", self.cycles, self.get_zero());
         }
         
         else {
-            print!(" {}", self.cycles);
-
             self.cycles -= 1;
         }
-        
-        if self.pc > 32 { panic!("Done"); }
+    }
+
+    pub fn load(&mut self) {
+        let mut count = 0;
+        self.bus.write_memory(0x8000 + count, 0xA2); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x0A); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x8E); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
+        self.bus.write_memory(0x8000 + count, 0xA2); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x03); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x8E); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x01); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
+        self.bus.write_memory(0x8000 + count, 0xAC); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
+        self.bus.write_memory(0x8000 + count, 0xA9); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x18); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x6D); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x01); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x88); count += 1;
+        self.bus.write_memory(0x8000 + count, 0xD0); count += 1;
+        self.bus.write_memory(0x8000 + count, 0xFA); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x8D); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x02); count += 1;
+        self.bus.write_memory(0x8000 + count, 0x00); count += 1;
+        self.bus.write_memory(0x8000 + count, 0xEA); count += 1;
+        self.bus.write_memory(0x8000 + count, 0xEA); count += 1;
+        self.bus.write_memory(0x8000 + count, 0xEA);
+
+        self.bus.write_memory(0xFFFC, 0x00);
+        self.bus.write_memory(0xFFFD, 0x80);
+        self.reset();
     }
 
     pub fn reset(&mut self) {
+        self.a = 0;
+        self.x = 0;
+        self.y = 0;
+        self.sp = 0xFD;
+        self.p = 0x00;
+
+        self.cycles = 8;
+
         let first = self.bus.get_memory(0xFFFC) as u16;
         let second = self.bus.get_memory(0xFFFC + 1) as u16;
         self.pc = second << 8 | first;
+    }
+
+    pub fn irq(&mut self) {
+        if self.get_interrupt_disable() == false {
+            self.push((self.pc >> 8) as u8 & 0xFF);
+            self.push(self.pc as u8 & 0xFF);
+            self.push(self.p);
+            self.set_interrupt_disable(true);
+            self.set_b_01(true);
+
+            let lo = self.bus.get_memory(0xFFFE) as u16;
+            let hi = self.bus.get_memory(0xFFFF) as u16;
+
+            self.pc = (hi << 8) | lo;
+
+            self.cycles = 7;
+        }
+    }
+
+    pub fn nmi(&mut self) {
+        self.push((self.pc >> 8) as u8 & 0xFF);
+        self.push(self.pc as u8 & 0xFF);
+        self.push(self.p);
+        self.set_interrupt_disable(true);
+        self.set_b_01(true);
+
+        let lo = self.bus.get_memory(0xFFFA) as u16;
+        let hi = self.bus.get_memory(0xFFFB) as u16;
+
+        self.pc = (hi << 8) | lo;
+
+        self.cycles = 8; 
     }
 
     pub fn pc_increase(&mut self) {

@@ -131,7 +131,9 @@ impl CPU {
         // Relative takes an extra cycle if the page of the instruction AFTER the branch is on a different page from the destination
         // Branches only take this additional cycle if they actually end up branching
 
-        return (pc + (self.bus.get_memory(pc) - 128) as u16, extra_cycle)
+        let offset = self.bus.get_memory(pc) as u16;
+        let address = if offset < 0x80 { self.pc + offset } else { self.pc + offset - 0x100 };
+        (address, extra_cycle)
     }
 
     // Zero Page
@@ -140,7 +142,7 @@ impl CPU {
         let pc = self.pc;
         let byte = self.bus.get_memory(pc) as u16;
         self.pc_increase();
-        (self.bus.get_memory(byte) as u16, 0)
+        (byte as u16, 0)
     }
 
     // Zero Page X-indexed
@@ -149,7 +151,7 @@ impl CPU {
         let pc = self.pc;
         let byte = self.bus.get_memory(pc) as u16;
         self.pc_increase();
-        (self.bus.get_memory((byte + self.x as u16) % 256) as u16, 0)
+        (((byte + self.x as u16) % 256) as u16, 0)
     }
 
     // Zero Page Y-indexed
@@ -158,7 +160,7 @@ impl CPU {
         let pc = self.pc;
         let byte = self.bus.get_memory(pc) as u16;
         self.pc_increase();
-        (self.bus.get_memory((byte + self.y as u16) % 256) as u16, 0)
+        (((byte + self.y as u16) % 256) as u16, 0)
     }
 }
 

@@ -13,8 +13,6 @@ impl Bus {
             memory: [0; 0xFFFF],
             cartridge: Cartridge::new()
         };
-        bus.write_memory(0xd, 0x38);
-        bus.write_memory(0xf, 0x18);
         bus
     }
 
