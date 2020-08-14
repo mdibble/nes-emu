@@ -39,7 +39,7 @@ impl CPU {
         let second_byte = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
 
-        let extra_cycle = if ((first_byte | second_byte << 8) + self.x as u16) % 256 > (first_byte | second_byte << 8) % 256 { 0 } else { 1 }; 
+        let extra_cycle = if ((first_byte | second_byte << 8) + self.x as u16) / 256 != (first_byte | second_byte << 8) / 256 { 1 } else { 0 }; 
 
         ((first_byte | second_byte << 8) + self.x as u16, extra_cycle) // ssff
     }
@@ -53,7 +53,7 @@ impl CPU {
         let second_byte = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
 
-        let extra_cycle = if ((first_byte | second_byte << 8) + self.y as u16) % 256 > (first_byte | second_byte << 8) % 256 { 0 } else { 1 }; 
+        let extra_cycle = if ((first_byte | second_byte << 8) + self.y as u16) / 256 != (first_byte | second_byte << 8) / 256 { 1 } else { 0 };  
 
         ((first_byte | second_byte << 8) + self.y as u16, extra_cycle) // ssff
     }
@@ -127,7 +127,7 @@ impl CPU {
         let pc = self.pc;
         self.pc_increase();
 
-        let extra_cycle = if self.pc / 256 == (pc + self.bus.get_memory(pc) as u16 - 128) / 256 { 0 } else { 1 };
+        let extra_cycle = if pc / 256 == (pc + self.bus.get_memory(pc) as u16 - 128) / 256 { 0 } else { 1 };
         // Relative takes an extra cycle if the page of the instruction AFTER the branch is on a different page from the destination
         // Branches only take this additional cycle if they actually end up branching
 

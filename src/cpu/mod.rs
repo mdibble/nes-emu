@@ -57,7 +57,11 @@ impl CPU {
 
         self.cycles = 8;
 
-        let first = self.bus.get_memory(0xFFFC) as u16;
+        // NMI: $FFFA-$FFFB
+        // RESET: $FFFC-$FFFD
+        // IRQ: $FFFE-$FFFF
+
+        let first = self.bus.get_memory(0xFFFF) as u16;
         let second = self.bus.get_memory(0xFFFC + 1) as u16;
         self.pc = second << 8 | first;
     }

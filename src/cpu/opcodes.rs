@@ -272,7 +272,25 @@ impl CPU {
     }
 
     pub fn lsr(&mut self, mode: Mode) -> u8 {
+        let acc_mode = match mode {
+            Mode::ACC => true,
+            _ => false
+        };
+
         let (address, _) = self.set_mode(mode);
+
+        if address & 0b00000001 == 0b00000001 { self.set_carry(true); } else { self.set_carry(false); }
+        let mut result = self.bus.get_memory(address) >> 1;
+        result &= 0xFF;
+        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
+
+        if acc_mode == true {
+            self.a = result;
+        }
+        else {
+            self.bus.write_memory(address, result);
+        }
         0
     }
 
@@ -316,12 +334,54 @@ impl CPU {
     }
 
     pub fn rol(&mut self, mode: Mode) -> u8 {
+        let acc_mode = match mode {
+            Mode::ACC => true,
+            _ => false
+        };
+
         let (address, _) = self.set_mode(mode);
+        let address_val = self.bus.get_memory(address);
+        let mut result = address_val << 1;
+        if self.get_carry() == true {
+            result = result | 0b00000001;
+        }
+        if address_val & 0b10000000 == 0b10000000 { self.set_carry(true); } else { self.set_carry(false); }
+        result &= 0xFF;
+        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
+
+        if acc_mode == true {
+            self.a = result;
+        }
+        else {
+            self.bus.write_memory(address, result);
+        }
         0
     }
 
     pub fn ror(&mut self, mode: Mode) -> u8 {
+        let acc_mode = match mode {
+            Mode::ACC => true,
+            _ => false
+        };
+
         let (address, _) = self.set_mode(mode);
+        let address_val = self.bus.get_memory(address);
+        let mut result = address_val >> 1;
+        if self.get_carry() == true {
+            result = result | 0b10000000;
+        }
+        if address_val & 0b00000001 == 0b00000001 { self.set_carry(true); } else { self.set_carry(false); }
+        result &= 0xFF;
+        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
+
+        if acc_mode == true {
+            self.a = result;
+        }
+        else {
+            self.bus.write_memory(address, result);
+        }
         0
     }
 
