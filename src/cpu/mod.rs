@@ -35,12 +35,11 @@ impl CPU {
 
     pub fn tick(&mut self) {
         if self.cycles == 0 {
-            println!("");
             let opcode = self.bus.get_memory(self.pc);
             print!("${:x}: \t0x{:x}\tCycles: ", self.pc, opcode);
             self.pc_increase();
             self.cycles = self.execute(opcode) + CYCLE_TABLE[opcode as usize] as u8;
-            print!("{} {}", self.cycles, self.get_zero());
+            println!("{}", self.cycles);
         }
         
         else {
