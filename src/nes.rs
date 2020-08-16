@@ -19,5 +19,8 @@ impl NES {
 
     pub fn cycle(&mut self) {
         self.cpu.tick();
+        self.cpu.bus.ppu.tick();
+        self.cpu.bus.ppu.tick();
+        self.cpu.bus.ppu.tick();
     }
 }

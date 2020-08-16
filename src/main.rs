@@ -6,6 +6,7 @@ mod cartridge;
 mod nes;
 mod cpu;
 mod bus;
+mod ppu;
 
 use cartridge::Cartridge;
 use nes::NES;
