@@ -19,6 +19,9 @@ fn main() {
 
     nes.insert_cartridge(rom);
 
+    // For testing the CPU without graphics
+    nes.cpu_test("roms/nestest.nes");
+
     loop {
         nes.cycle();
     }

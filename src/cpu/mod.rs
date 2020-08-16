@@ -36,10 +36,10 @@ impl CPU {
     pub fn tick(&mut self) {
         if self.cycles == 0 {
             let opcode = self.bus.get_memory(self.pc);
-            print!("${:x}: \t0x{:x}\tCycles: ", self.pc, opcode);
+            print!("${:x}:\t0x{:x}\t", self.pc, opcode);
+            println!("A:{:x}\tX:{:x}\tY:{:x}\tP:{:x}\tSP:{:x}", self.a, self.x, self.y, self.p, self.sp);
             self.pc_increase();
             self.cycles = self.execute(opcode) + CYCLE_TABLE[opcode as usize] as u8;
-            println!("{}", self.cycles);
         }
         
         else {
@@ -52,17 +52,17 @@ impl CPU {
         self.x = 0;
         self.y = 0;
         self.sp = 0xFD;
-        self.p = 0x00;
+        self.p = 0x24;
 
-        self.cycles = 8;
+        // self.cycles = 8;
 
         // NMI: $FFFA-$FFFB
         // RESET: $FFFC-$FFFD
         // IRQ: $FFFE-$FFFF
 
         let first = self.bus.get_memory(0xFFFF) as u16;
-        let second = self.bus.get_memory(0xFFFC + 1) as u16;
-        self.pc = second << 8 | first;
+        let second = self.bus.get_memory(0xFFFE) as u16;
+        self.pc = first << 8 | second;
     }
 
     pub fn irq(&mut self) {
@@ -210,7 +210,7 @@ impl CPU {
             0xA5 => self.lda(Mode::ZP),
             0xA6 => self.ldx(Mode::ZP),
             0xA8 => self.tay(Mode::IMP),
-            0xA9 => self.lda(Mode::ABY),
+            0xA9 => self.lda(Mode::IMM),
             0xAA => self.tax(Mode::IMP),
             0xAC => self.ldy(Mode::ABS),
             0xAD => self.lda(Mode::ABS),

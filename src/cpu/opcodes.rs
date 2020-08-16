@@ -103,7 +103,7 @@ impl CPU {
 
     pub fn brk(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        // self.pc += 1;
+        self.pc += 1;
         self.set_interrupt_disable(true);
         self.push((self.pc >> 8) as u8 & 0xFF);
         self.push(self.pc as u8 & 0xFF);
@@ -220,7 +220,7 @@ impl CPU {
 
     pub fn inx(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.x += 1;
+        if self.x != 255 { self.x += 1; } else { self.x = 0; }
         if self.x == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.x & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         0
@@ -228,7 +228,8 @@ impl CPU {
 
     pub fn iny(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.y += 1;
+        
+        if self.y != 255 { self.y += 1; } else { self.y = 0; }
         if self.y == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.y & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         0
@@ -242,7 +243,8 @@ impl CPU {
 
     pub fn jsr(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
-        self.push(self.bus.get_memory(self.pc));
+        self.push((self.pc >> 8)as u8);
+        self.push(self.pc as u8);
         self.pc = address;
         0
     }
@@ -329,7 +331,13 @@ impl CPU {
 
     pub fn plp(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.p = self.pop();
+        let flags = self.pop();
+        self.set_negative(flags & 0x80 != 0);
+        self.set_overflow(flags & 0x40 != 0);
+        self.set_decimal(flags & 0x08 != 0);
+        self.set_interrupt_disable(flags & 0x04 != 0);
+        self.set_zero(flags & 0x02 != 0);
+        self.set_carry(flags & 0x01 != 0);
         0
     }
 
@@ -398,12 +406,11 @@ impl CPU {
 
     pub fn rts(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.p = self.pop();
 
         let lo = self.pop() as u16;
         let hi = self.pop() as u16;
 
-        self.pc = ((hi << 8) | lo) + 1;
+        self.pc = (hi << 8) | lo;
         0
     }
 
