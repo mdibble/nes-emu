@@ -4,6 +4,17 @@ use super::addressing_modes::Mode;
 impl CPU {
     pub fn adc(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
+        let val = self.bus.get_memory(address);
+
+        let mut result = self.a.wrapping_add(val);
+        if self.get_carry() { result = result.wrapping_add(1); };
+
+        // carry        TODO
+        // negative     TODO
+        if result == 0 { self.set_zero(true); } else { self.set_zero(false) };
+
+        self.a = result;
+
         extra_cycle
     }
 
@@ -158,7 +169,7 @@ impl CPU {
         let (address, extra_cycle) = self.set_mode(mode);
         if self.a >= self.bus.get_memory(address) { self.set_carry(true); } else { self.set_carry(false); }
         if self.a == self.bus.get_memory(address) { self.set_zero(true); } else { self.set_zero(false); }
-        if self.a < self.bus.get_memory(address) { self.set_negative(true); } else { self.set_negative(false); }
+        if self.a < self.bus.get_memory(address) { self.set_negative(false); } else { self.set_negative(true); }
         extra_cycle
     }
 
@@ -166,7 +177,7 @@ impl CPU {
         let (address, _) = self.set_mode(mode);
         if self.x >= self.bus.get_memory(address) { self.set_carry(true); } else { self.set_carry(false); }
         if self.x == self.bus.get_memory(address) { self.set_zero(true); } else { self.set_zero(false); }
-        if self.x < self.bus.get_memory(address) { self.set_negative(true); } else { self.set_negative(false); } 
+        if self.x < self.bus.get_memory(address) { self.set_negative(false); } else { self.set_negative(true); }
         0
     }
 
@@ -174,7 +185,7 @@ impl CPU {
         let (address, _) = self.set_mode(mode);
         if self.y >= self.bus.get_memory(address) { self.set_carry(true); } else { self.set_carry(false); }
         if self.y == self.bus.get_memory(address) { self.set_zero(true); } else { self.set_zero(false); }
-        if self.y < self.bus.get_memory(address) { self.set_negative(true); } else { self.set_negative(false); } 
+        if self.y < self.bus.get_memory(address) { self.set_negative(false); } else { self.set_negative(true); } 
         0
     }
 
