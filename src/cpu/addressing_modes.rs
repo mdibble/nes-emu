@@ -94,14 +94,14 @@ impl CPU {
     // Indirect X-indexed (also known as Indexed Indirect)
     // Indirect but even more confusing (add the register to the address before you seek)
     pub fn mode_izx(&mut self) -> (u16, u8) {
-        let param = self.bus.get_memory(self.pc) as u16;
+        let param = self.bus.get_memory(self.pc);
         self.pc_increase();
-        let pointer = param + self.x as u16; // need to add wrapping?
-        let first_byte = self.bus.get_memory(pointer) as u16;
-        let second_byte = self.bus.get_memory(pointer + 1) as u16;
+        let mut pointer: u8 = param.wrapping_add(self.x);
+        let first_byte = self.bus.get_memory(pointer as u16);
+        pointer = pointer.wrapping_add(1);
+        let second_byte = self.bus.get_memory(pointer as u16);
 
-        let address = first_byte | second_byte << 8;
-
+        let address: u16 = first_byte as u16 | (second_byte as u16) << 8;
         (address, 0)
     }
 
@@ -129,7 +129,7 @@ impl CPU {
 
         let offset = self.bus.get_memory(pc) as u16;
         let address = if offset < 0x80 { self.pc + offset } else { self.pc + offset - 0x100 };
-        let extra_cycle = if pc / 256 == address / 256 { 0 } else { 1 };
+        let extra_cycle = if (pc + 1) / 256 == address / 256 { 0 } else { 1 };
         // Relative takes an extra cycle if the page of the instruction AFTER the branch is on a different page from the destination
         // Branches only take this additional cycle if they actually end up branching
         (address, extra_cycle)

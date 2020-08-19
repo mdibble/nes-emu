@@ -35,8 +35,10 @@ impl CPU {
 
         let (address, _) = self.set_mode(mode);
 
-        if address & 0b10000000 == 0b10000000 { self.set_carry(true); } else { self.set_carry(false); }
-        let mut result = self.bus.get_memory(address) << 1;
+        let operand = if acc_mode { self.a } else { self.bus.get_memory(address) };
+
+        if operand & 0b10000000 == 0b10000000 { self.set_carry(true); } else { self.set_carry(false); }
+        let mut result = operand << 1;
         result &= 0xFF;
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
@@ -285,7 +287,8 @@ impl CPU {
 
     pub fn jsr(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
-        self.push((self.pc >> 8)as u8);
+        self.pc -= 1; // testing
+        self.push((self.pc >> 8) as u8);
         self.push(self.pc as u8);
         self.pc = address;
         0
@@ -322,9 +325,11 @@ impl CPU {
         };
 
         let (address, _) = self.set_mode(mode);
+        
+        let operand = if acc_mode { self.a } else { self.bus.get_memory(address) };
 
-        if address & 0b00000001 == 0b00000001 { self.set_carry(true); } else { self.set_carry(false); }
-        let mut result = self.bus.get_memory(address) >> 1;
+        if operand & 0b00000001 == 0b00000001 { self.set_carry(true); } else { self.set_carry(false); }
+        let mut result = operand >> 1;
         result &= 0xFF;
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
@@ -390,12 +395,12 @@ impl CPU {
         };
 
         let (address, _) = self.set_mode(mode);
-        let address_val = self.bus.get_memory(address);
-        let mut result = address_val << 1;
+        let operand = if acc_mode { self.a } else { self.bus.get_memory(address) };
+        let mut result = operand << 1;
         if self.get_carry() == true {
             result = result | 0b00000001;
         }
-        if address_val & 0b10000000 == 0b10000000 { self.set_carry(true); } else { self.set_carry(false); }
+        if operand & 0b10000000 == 0b10000000 { self.set_carry(true); } else { self.set_carry(false); }
         result &= 0xFF;
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
@@ -416,12 +421,12 @@ impl CPU {
         };
 
         let (address, _) = self.set_mode(mode);
-        let address_val = self.bus.get_memory(address);
-        let mut result = address_val >> 1;
+        let operand = if acc_mode { self.a } else { self.bus.get_memory(address) };
+        let mut result = operand >> 1;
         if self.get_carry() == true {
             result = result | 0b10000000;
         }
-        if address_val & 0b00000001 == 0b00000001 { self.set_carry(true); } else { self.set_carry(false); }
+        if operand & 0b00000001 == 0b00000001 { self.set_carry(true); } else { self.set_carry(false); }
         result &= 0xFF;
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
@@ -437,7 +442,7 @@ impl CPU {
 
     pub fn rti(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.p = self.pop();
+        self.p = self.pop() | 0x20;
 
         let lo = self.pop() as u16;
         let hi = self.pop() as u16;
@@ -453,6 +458,7 @@ impl CPU {
         let hi = self.pop() as u16;
 
         self.pc = (hi << 8) | lo;
+        self.pc += 1;
         0
     }
 
