@@ -9,8 +9,9 @@ impl CPU {
         let mut result = self.a.wrapping_add(val);
         if self.get_carry() { result = result.wrapping_add(1); };
 
-        // carry        TODO
-        // negative     TODO
+        if !((self.a ^ val) & 0x80 != 0) && ((self.a ^ result) & 0x80 != 0) { self.set_overflow(true); }  else { self.set_overflow(false); }
+        if result < self.a { self.set_carry(true); } else { self.set_carry(false); }
+        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false) };
         if result == 0 { self.set_zero(true); } else { self.set_zero(false) };
 
         self.a = result;
@@ -55,6 +56,9 @@ impl CPU {
             self.pc = address;
             extra_cycle += 1;
         }
+        else {
+            extra_cycle = 0;
+        }
         extra_cycle
     }
 
@@ -64,6 +68,9 @@ impl CPU {
             self.pc = address;
             extra_cycle += 1;
         }
+        else {
+            extra_cycle = 0;
+        }
         extra_cycle
     }
 
@@ -72,6 +79,9 @@ impl CPU {
         if self.get_zero() == true {
             self.pc = address;
             extra_cycle += 1;
+        }
+        else {
+            extra_cycle = 0;
         }
         extra_cycle
     }
@@ -91,6 +101,9 @@ impl CPU {
             self.pc = address;
             extra_cycle += 1;
         }
+        else {
+            extra_cycle = 0;
+        }
         extra_cycle
     }
 
@@ -100,6 +113,9 @@ impl CPU {
             self.pc = address;
             extra_cycle += 1;
         }
+        else {
+            extra_cycle = 0;
+        }
         extra_cycle
     }
 
@@ -108,6 +124,9 @@ impl CPU {
         if self.get_negative() == false {
             self.pc = address;
             extra_cycle += 1;
+        }
+        else {
+            extra_cycle = 0;
         }
         extra_cycle
     }
@@ -129,6 +148,9 @@ impl CPU {
             self.pc = address;
             extra_cycle += 1;
         }
+        else {
+            extra_cycle = 0;
+        }
         extra_cycle
     }
 
@@ -137,6 +159,9 @@ impl CPU {
         if self.get_overflow() == true {
             self.pc = address;
             extra_cycle += 1;
+        }
+        else {
+            extra_cycle = 0;
         }
         extra_cycle
     }
@@ -167,25 +192,31 @@ impl CPU {
 
     pub fn cmp(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
+        let result: u8 = self.a.wrapping_sub(self.bus.get_memory(address));
+
         if self.a >= self.bus.get_memory(address) { self.set_carry(true); } else { self.set_carry(false); }
         if self.a == self.bus.get_memory(address) { self.set_zero(true); } else { self.set_zero(false); }
-        if self.a < self.bus.get_memory(address) { self.set_negative(false); } else { self.set_negative(true); }
+        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         extra_cycle
     }
 
     pub fn cpx(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
+        let result: u8 = self.x.wrapping_sub(self.bus.get_memory(address));
+
         if self.x >= self.bus.get_memory(address) { self.set_carry(true); } else { self.set_carry(false); }
         if self.x == self.bus.get_memory(address) { self.set_zero(true); } else { self.set_zero(false); }
-        if self.x < self.bus.get_memory(address) { self.set_negative(false); } else { self.set_negative(true); }
+        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         0
     }
 
     pub fn cpy(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
+        let result: u8 = self.y.wrapping_sub(self.bus.get_memory(address));
+
         if self.y >= self.bus.get_memory(address) { self.set_carry(true); } else { self.set_carry(false); }
         if self.y == self.bus.get_memory(address) { self.set_zero(true); } else { self.set_zero(false); }
-        if self.y < self.bus.get_memory(address) { self.set_negative(false); } else { self.set_negative(true); } 
+        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         0
     }
 
@@ -199,7 +230,7 @@ impl CPU {
 
     pub fn dex(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.x -= 1;
+        self.x = self.x.wrapping_sub(1);
         if self.x == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.x & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         0
@@ -207,7 +238,7 @@ impl CPU {
 
     pub fn dey(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.y -= 1;
+        self.y = self.y.wrapping_sub(1);
         if self.y == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.y & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         0
@@ -427,6 +458,18 @@ impl CPU {
 
     pub fn sbc(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
+        let val = self.bus.get_memory(address);
+
+        let mut result = self.a.wrapping_sub(val);
+        if self.get_carry() == false { result = result.wrapping_sub(1); };
+
+        if ((self.a ^ result) & 0x80 != 0) && ((self.a ^ val) & 0x80 != 0) { self.set_overflow(true); }  else { self.set_overflow(false); }
+        if result < self.a { self.set_carry(true); } else { self.set_carry(false); }
+        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false) };
+        if result == 0 { self.set_zero(true); } else { self.set_zero(false) };
+
+        self.a = result;
+
         extra_cycle
     }
 
@@ -484,7 +527,7 @@ impl CPU {
 
     pub fn tsx(&mut self, mode: Mode) -> u8 {
         let (_, _) = self.set_mode(mode);
-        self.x = self.bus.get_memory(self.sp as u16);
+        self.x = self.sp;
         if self.x == 0 { self.set_zero(true) } else { self.set_zero(false); }
         if self.x & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         0

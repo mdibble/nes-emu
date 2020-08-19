@@ -127,12 +127,11 @@ impl CPU {
         let pc = self.pc;
         self.pc_increase();
 
-        let extra_cycle = if pc / 256 == (pc + self.bus.get_memory(pc) as u16 - 128) / 256 { 0 } else { 1 };
-        // Relative takes an extra cycle if the page of the instruction AFTER the branch is on a different page from the destination
-        // Branches only take this additional cycle if they actually end up branching
-
         let offset = self.bus.get_memory(pc) as u16;
         let address = if offset < 0x80 { self.pc + offset } else { self.pc + offset - 0x100 };
+        let extra_cycle = if pc / 256 == address / 256 { 0 } else { 1 };
+        // Relative takes an extra cycle if the page of the instruction AFTER the branch is on a different page from the destination
+        // Branches only take this additional cycle if they actually end up branching
         (address, extra_cycle)
     }
 

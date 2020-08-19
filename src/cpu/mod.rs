@@ -15,7 +15,8 @@ pub struct CPU {
     sp: u8,
     p: u8,
     pub bus: Bus,
-    cycles: u8
+    cycles: u8,
+    total_cycles: usize
 }
 
 impl CPU {
@@ -28,7 +29,8 @@ impl CPU {
             sp: 0xFD,
             p: 0x24,
             bus: Bus::new(),
-            cycles: 0
+            cycles: 0,
+            total_cycles: 0
         };
         cpu
     }
@@ -36,14 +38,15 @@ impl CPU {
     pub fn tick(&mut self) {
         if self.cycles == 0 {
             let opcode = self.bus.get_memory(self.pc);
-            print!("${:x}:\t0x{:x}\t", self.pc, opcode);
-            println!("A:{:x}\tX:{:x}\tY:{:x}\tP:{:x}\tSP:{:x}", self.a, self.x, self.y, self.p, self.sp);
+            print!("${:x}:\t0x{:x}\t({:x} {:x})\t\t", self.pc, opcode, self.bus.get_memory(self.pc + 1), self.bus.get_memory(self.pc + 2));
+            println!("A:{:x}\tX:{:x}\tY:{:x}\tP:{:x}\tSP:{:x}\tCYC:{}\t", self.a, self.x, self.y, self.p, self.sp, self.total_cycles);
             self.pc_increase();
             self.cycles = self.execute(opcode) + CYCLE_TABLE[opcode as usize] as u8;
         }
         
         else {
             self.cycles -= 1;
+            self.total_cycles += 1;
         }
     }
 
@@ -54,7 +57,7 @@ impl CPU {
         self.sp = 0xFD;
         self.p = 0x24;
 
-        // self.cycles = 8;
+        self.cycles += 7;
 
         // NMI: $FFFA-$FFFB
         // RESET: $FFFC-$FFFD

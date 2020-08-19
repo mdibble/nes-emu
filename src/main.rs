@@ -20,6 +20,7 @@ fn main() {
     nes.insert_cartridge(rom);
 
     // For testing the CPU without graphics
+    // Point of failure: $ce42, cycle 2029
     nes.cpu_test("roms/nestest.nes");
 
     loop {
