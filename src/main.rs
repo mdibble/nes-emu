@@ -21,7 +21,7 @@ fn main() {
 
     // For testing the CPU without graphics
     // Tested until: $c6bd, cycle 14579
-    nes.cpu_test("roms/nestest.nes");
+    nes.cpu_test("roms/donkeykong.nes");
 
     loop {
         nes.cycle();

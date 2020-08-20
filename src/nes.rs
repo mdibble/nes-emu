@@ -26,9 +26,12 @@ impl NES {
             Ok(g) => g,
             Err(_) => panic!("Error! No file was found at location")
         };
-        let length_of = 0xFFFF - 0xBFFF;
-        for i in 0..length_of {
+        for i in 0..0x4000 {
             self.cpu.bus.write_memory(0xC000 + i as u16, payload[i + 16]);
+        }
+
+        for i in 0..0x2000 {
+            self.cpu.bus.ppu.ppu_write(i, payload[(i + 16) as usize]);
         }
         
         self.cpu.bus.write_memory(0xFFFE, 0x00); 

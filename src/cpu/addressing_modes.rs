@@ -114,7 +114,7 @@ impl CPU {
     // Indirect but even more confusing (add the register to the address after you seek)
     // Can take an additional cycle
     pub fn mode_izy(&mut self) -> (u16, u8) {
-        let mut param = self.bus.get_memory(self.pc) as u16;
+        let param = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
         let first_byte = param;
         let second_byte = (param + 1) % 256;
