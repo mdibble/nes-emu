@@ -23,11 +23,23 @@ impl PPU {
         if self.cycle > 340 {
             self.cycle = 0;
             self.scanline += 1;
-            if self.scanline > 260 {
-                self.scanline -= 1;
-                self.frame_complete = true;
-            }
         }
+
+        // Drawing
+        if self.scanline <= 239 {
+
+        }
+
+        // VBlank
+        else if self.scanline == 241 && self.cycle == 1 {
+
+        }
+
+        //VBlank off
+        else if self.scanline == 261 && self.cycle == 1 {
+
+        }
+
     }
 
     pub fn get_reg(&self, address: u16) -> u8 {
