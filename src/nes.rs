@@ -31,7 +31,7 @@ impl NES {
         }
 
         for i in 0..0x2000 {
-            self.cpu.bus.ppu.ppu_write(i, payload[(i + 16) as usize]);
+            self.cpu.bus.ppu.write_memory(i, payload[(i + 16) as usize]);
         }
         
         self.cpu.bus.write_memory(0xFFFE, 0x00); 

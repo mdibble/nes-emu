@@ -1,5 +1,3 @@
-use crate::bus::Bus;
- 
 pub struct PPU {
     // bus: &Bus,
     memory: [u8; 0x4000], // $0000-$3FFF
@@ -32,21 +30,42 @@ impl PPU {
         }
     }
 
-    pub fn ppu_read(&self, address: u16) -> u8 {
+    pub fn get_reg(&self, address: u16) -> u8 {
+        match address {
+            0x2000 => println!("PPU register 0x2000"),
+            0x2001 => println!("PPU register 0x2001"),
+            0x2002 => println!("PPU register 0x2002"),
+            0x2003 => println!("PPU register 0x2003"),
+            0x2004 => println!("PPU register 0x2004"),
+            0x2005 => println!("PPU register 0x2005"),
+            0x2006 => println!("PPU register 0x2006"),
+            0x2007 => println!("PPU register 0x2007"),
+            _ => panic!("No register at this location! ${:x}", address)
+        }
+        0
+    }
+
+    pub fn write_reg(&self, address: u16, contents: u8) -> u8 {
+        match address {
+            0x2000 => println!("PPU register 0x2000 = {:x}", contents),
+            0x2001 => println!("PPU register 0x2001 = {:x}", contents),
+            0x2002 => println!("PPU register 0x2002 = {:x}", contents),
+            0x2003 => println!("PPU register 0x2003 = {:x}", contents),
+            0x2004 => println!("PPU register 0x2004 = {:x}", contents),
+            0x2005 => println!("PPU register 0x2005 = {:x}", contents),
+            0x2006 => println!("PPU register 0x2006 = {:x}", contents),
+            0x2007 => println!("PPU register 0x2007 = {:x}", contents),
+            _ => panic!("No register at this location! ${:x}", address)
+        }
+        0
+    }
+
+    pub fn get_memory(&self, address: u16) -> u8 {
         self.memory[address as usize]
     }
 
-    pub fn ppu_write(&mut self, address: u16, contents: u8) -> u8 {
+    pub fn write_memory(&mut self, address: u16, contents: u8) -> u8 {
         self.memory[address as usize] = contents;
         contents
     }
-
-    // pub fn cpu_read(&self, address: u16) -> u8 {
-    //     self.bus.get_memory(address as usize)
-    // }
-
-    // pub fn cpu_write(&mut self, address: u16, contents: u8) -> u8 {
-    //     self.bus.write_memory(address as usize, contents);
-    //     contents
-    // }
 }
