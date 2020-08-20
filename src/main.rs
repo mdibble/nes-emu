@@ -20,7 +20,7 @@ fn main() {
     nes.insert_cartridge(rom);
 
     // For testing the CPU without graphics
-    // Tested until: $f7c2, cycle 2744
+    // Tested until: $c6bd, cycle 14579
     nes.cpu_test("roms/nestest.nes");
 
     loop {

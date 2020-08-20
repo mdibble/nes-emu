@@ -53,9 +53,9 @@ impl CPU {
         let second_byte = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
 
-        let extra_cycle = if ((first_byte | second_byte << 8) + self.y as u16) / 256 != (first_byte | second_byte << 8) / 256 { 1 } else { 0 };  
+        let extra_cycle = if ((first_byte | second_byte << 8).wrapping_add(self.y as u16)) / 256 != (first_byte | second_byte << 8) / 256 { 1 } else { 0 };  
 
-        ((first_byte | second_byte << 8) + self.y as u16, extra_cycle) // ssff
+        ((first_byte | second_byte << 8).wrapping_add(self.y as u16), extra_cycle) // ssff
     }
 
     // Accumulator
@@ -85,8 +85,13 @@ impl CPU {
         self.pc_increase();
         let second_byte = self.bus.get_memory(self.pc) as u16; // ss
         self.pc_increase();
-
-        let address = first_byte | second_byte << 8; // ssff
+        let pointer = first_byte | second_byte << 8;
+        
+        let mut address = self.bus.get_memory(pointer) as u16 | (self.bus.get_memory(pointer + 1) as u16) << 8;
+        
+        if pointer % 256 == 255 { 
+            address = self.bus.get_memory(pointer) as u16 | (self.bus.get_memory(pointer - 255) as u16) << 8;
+        }
 
         (address, 0) 
     }
@@ -109,13 +114,12 @@ impl CPU {
     // Indirect but even more confusing (add the register to the address after you seek)
     // Can take an additional cycle
     pub fn mode_izy(&mut self) -> (u16, u8) {
-        let param = self.bus.get_memory(self.pc) as u16;
+        let mut param = self.bus.get_memory(self.pc) as u16;
         self.pc_increase();
-        let first_byte = self.bus.get_memory(param) as u16;
-        let second_byte = self.bus.get_memory(param + 1) as u16;
-
-        let address = (first_byte | second_byte << 8) + self.y as u16;
-        let extra_cycle = if (first_byte | second_byte << 8) % 256 == address % 256 { 0 } else { 1 };
+        let first_byte = param;
+        let second_byte = (param + 1) % 256;
+        let address = (self.bus.get_memory(first_byte) as u16 | (self.bus.get_memory(second_byte) as u16) << 8).wrapping_add(self.y as u16);
+        let extra_cycle = if (self.bus.get_memory(first_byte) as u16 | (self.bus.get_memory(second_byte) as u16) << 8) % 256 == address % 256 { 0 } else { 1 };
 
         (address, extra_cycle)
     }
