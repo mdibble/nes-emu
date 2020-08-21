@@ -20,7 +20,7 @@ pub struct CPU {
 }
 
 impl CPU {
-    pub fn new() -> CPU {
+    pub fn new(cart_data: Vec<u8>) -> CPU {
         let cpu = CPU {
             a: 0,
             x: 0,
@@ -28,7 +28,7 @@ impl CPU {
             pc: 0,
             sp: 0xFD,
             p: 0x24,
-            bus: Bus::new(),
+            bus: Bus::new(cart_data),
             cycles: 0,
             total_cycles: 0
         };

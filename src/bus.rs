@@ -9,11 +9,11 @@ pub struct Bus {
 }
 
 impl Bus {
-    pub fn new() -> Bus {
+    pub fn new(cart_data: Vec<u8>) -> Bus {
         let bus = Bus {
             memory: [0; 0x10000],
             ppu: PPU::new(),
-            cartridge: Cartridge::new()
+            cartridge: Cartridge::new(cart_data)
         };
         bus
     }
@@ -40,6 +40,7 @@ impl Bus {
             }
             0x4020..=0xFFFF => {
                 // Cartridge space
+                self.cartridge.read(address);
                 result = self.memory[address as usize]
             }
         }
@@ -66,16 +67,12 @@ impl Bus {
             }
             0x4020..=0xFFFF => {
                 // Cartridge space
+                self.cartridge.write(address, contents);
                 self.memory[address as usize] = contents;
             }
         }
 
         self.memory[address as usize] = contents;
         contents
-    }
-
-    pub fn insert_cartridge(&mut self, cartridge: Cartridge) {
-        self.cartridge = cartridge;
-        self.cartridge.get_info();
     }
 }

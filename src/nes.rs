@@ -1,23 +1,17 @@
 use crate::cpu::CPU;
-use crate::cartridge::Cartridge;
 
 use std::fs;
-
 
 pub struct NES {
     cpu: CPU
 }
 
 impl NES {
-    pub fn new() -> NES {
+    pub fn new(cart_data: Vec<u8>) -> NES {
         let nes = NES {
-            cpu: CPU::new()
+            cpu: CPU::new(cart_data)
         };
         nes
-    }
-
-    pub fn insert_cartridge(&mut self, cartridge: Cartridge) {
-        self.cpu.bus.insert_cartridge(cartridge);
     }
 
     pub fn cpu_test(&mut self, path: &str) {

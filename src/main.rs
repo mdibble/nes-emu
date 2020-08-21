@@ -8,16 +8,19 @@ mod cpu;
 mod bus;
 mod ppu;
 
-use cartridge::Cartridge;
 use nes::NES;
 
+use std::fs;
+
 fn main() {
-    let mut rom = Cartridge::new();
-    rom.inject("roms/nestest.nes");
+    let cart_data = fs::read("roms/donkey_kong.nes");
 
-    let mut nes = NES::new();
+    let cart_data = match cart_data {
+        Ok(g) => g,
+        Err(_) => panic!("Error! No file was found at the location specified")
+    };
 
-    nes.insert_cartridge(rom);
+    let mut nes = NES::new(cart_data);
 
     // For testing the CPU without graphics
     // Tested until: $c6bd, cycle 14579
