@@ -39,7 +39,7 @@ impl CPU {
         if self.cycles == 0 {
             let opcode = self.bus.get_memory(self.pc);
             print!("${:x}:\t0x{:x}\t({:x} {:x})\t\t", self.pc, opcode, self.bus.get_memory(self.pc + 1), self.bus.get_memory(self.pc + 2));
-            print!("A:{:x}\tX:{:x}\tY:{:x}\tP:{:x}\tSP:{:x}\tCYC:{}\tSTK:", self.a, self.x, self.y, self.p, self.sp, self.total_cycles);
+            print!("A:{:x}\tX:{:x}\tY:{:x}\tP:{:x}\tSP:{:x}\tCYC:{}\t\tSTK:", self.a, self.x, self.y, self.p, self.sp, self.total_cycles);
             self.peek();
             println!("");
             self.pc_increase();
@@ -64,6 +64,8 @@ impl CPU {
         // NMI: $FFFA-$FFFB
         // RESET: $FFFC-$FFFD
         // IRQ: $FFFE-$FFFF
+
+        self.bus.reset();
 
         let first = self.bus.get_memory(0xFFFD) as u16;
         let second = self.bus.get_memory(0xFFFC) as u16;

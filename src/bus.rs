@@ -1,11 +1,14 @@
 use crate::cartridge::Cartridge;
 use crate::ppu::PPU;
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 pub struct Bus {
     memory: [u8; 0x10000],
     pub ppu: PPU,
     // apu: APU
-    cartridge: Cartridge
+    cartridge: Rc<RefCell<Cartridge>>
 }
 
 impl Bus {
@@ -13,9 +16,13 @@ impl Bus {
         let bus = Bus {
             memory: [0; 0x10000],
             ppu: PPU::new(),
-            cartridge: Cartridge::new(cart_data)
+            cartridge: Rc::new(RefCell::new(Cartridge::new(cart_data)))
         };
         bus
+    }
+
+    pub fn reset(&mut self) {
+        self.ppu.assign_cartridge(self.cartridge.clone());
     }
 
     pub fn get_memory(&self, address: u16) -> u8 {
@@ -41,7 +48,7 @@ impl Bus {
             }
             0x4020..=0xFFFF => {
                 // Cartridge space
-                result = self.cartridge.read(address);
+                result = self.cartridge.borrow().read(address);
             }
         }
         result
@@ -68,7 +75,7 @@ impl Bus {
             }
             0x4020..=0xFFFF => {
                 // Cartridge space
-                self.cartridge.write(address, contents);
+                self.cartridge.borrow_mut().write(address, contents);
                 self.memory[address as usize] = contents;
             }
         }
