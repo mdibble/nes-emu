@@ -21,13 +21,13 @@ impl RomData {
         let mut anchor = if header.trainer { 0x210 } else { 0x10 };
 
         for i in 0..prg_rom.len() {
-            prg_rom[i] = dump[anchor];
+            prg_rom[i] = dump[anchor + i];
         }
 
-        anchor += 0x2000 * header.prg_rom_size as usize; 
+        anchor += 0x4000 * header.prg_rom_size as usize; 
 
         for i in 0..chr_rom.len() {
-            chr_rom[i] = dump[anchor];
+            chr_rom[i] = dump[anchor + i];
         }
 
         let rom_data = RomData {

@@ -14,6 +14,10 @@ impl NES {
         nes
     }
 
+    pub fn reset(&mut self) {
+        self.cpu.reset();
+    }
+
     pub fn cpu_test(&mut self, path: &str) {
         let payload = fs::read(path);
         let payload = match payload {
@@ -23,13 +27,9 @@ impl NES {
         for i in 0..0x4000 {
             self.cpu.bus.write_memory(0xC000 + i as u16, payload[i + 16]);
         }
-
-        for i in 0..0x2000 {
-            self.cpu.bus.ppu.write_memory(i, payload[(i + 16) as usize]);
-        }
         
-        self.cpu.bus.write_memory(0xFFFE, 0x00); 
-        self.cpu.bus.write_memory(0xFFFF, 0xC0);
+        //self.cpu.bus.write_memory(0xFFFC, 0x00); 
+        //self.cpu.bus.write_memory(0xFFFD, 0xC0);
         self.cpu.reset(); 
     }
 

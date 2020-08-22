@@ -21,10 +21,11 @@ fn main() {
     };
 
     let mut nes = NES::new(cart_data);
-
     // For testing the CPU without graphics
     // Tested until: $c6bd, cycle 14579
-    nes.cpu_test("roms/nestest.nes");
+    // nes.cpu_test("roms/nestest.nes");
+
+    nes.reset();
 
     loop {
         nes.cycle();

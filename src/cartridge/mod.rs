@@ -23,8 +23,6 @@ impl Cartridge {
         let cartridge = Cartridge {
             mapper: mapper
         };
-
-        println!("Created new cartridge");
         cartridge
     }
 

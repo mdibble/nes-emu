@@ -65,8 +65,8 @@ impl CPU {
         // RESET: $FFFC-$FFFD
         // IRQ: $FFFE-$FFFF
 
-        let first = self.bus.get_memory(0xFFFF) as u16;
-        let second = self.bus.get_memory(0xFFFE) as u16;
+        let first = self.bus.get_memory(0xFFFD) as u16;
+        let second = self.bus.get_memory(0xFFFC) as u16;
         self.pc = first << 8 | second;
     }
 

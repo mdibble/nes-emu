@@ -28,7 +28,8 @@ impl Bus {
             }
             0x2000..=0x3FFF => {
                 // PPU registers
-                result = self.memory[address as usize % 0x8]
+                // result = self.memory[address as usize % 0x8]
+                result = self.ppu.get_reg(address);
             }
             0x4000..=0x4017 => {
                 // Input and APU
@@ -40,8 +41,7 @@ impl Bus {
             }
             0x4020..=0xFFFF => {
                 // Cartridge space
-                self.cartridge.read(address);
-                result = self.memory[address as usize]
+                result = self.cartridge.read(address);
             }
         }
         result
@@ -55,7 +55,8 @@ impl Bus {
             }
             0x2000..=0x3FFF => {
                 // PPU registers
-                self.memory[address as usize % 0x8] = contents;
+                // self.memory[address as usize % 0x8] = contents;
+                self.ppu.write_reg(address, contents);
             }
             0x4000..=0x4017 => {
                 // Input and APU
@@ -71,8 +72,6 @@ impl Bus {
                 self.memory[address as usize] = contents;
             }
         }
-
-        self.memory[address as usize] = contents;
         contents
     }
 }

@@ -1,9 +1,16 @@
 pub struct PPU {
-    // bus: &Bus,
     memory: [u8; 0x4000], // $0000-$3FFF
     scanline: u16, // 260, y-axis
     cycle: u16, // 340, x-axis
-    frame_complete: bool
+
+    reg_ppu_ctrl: u8,       // $2000
+    reg_ppu_mask: u8,       // $2001
+    reg_ppu_status: u8,     // $2002
+    reg_oam_addr: u8,       // $2003
+    reg_oam_data: u8,       // $2004
+    reg_ppu_scroll: u8,     // $2005
+    reg_ppu_addr: u8,       // $2006
+    reg_ppu_data: u8,       // $2007
 }
 
 impl PPU {
@@ -13,7 +20,14 @@ impl PPU {
             memory: [0; 0x4000],
             scanline: 0,
             cycle: 0,
-            frame_complete: false
+            reg_ppu_ctrl: 0b00000000,
+            reg_ppu_mask: 0b00000000,
+            reg_ppu_status: 0b00000000,
+            reg_oam_addr: 0b00000000,
+            reg_oam_data: 0b00000000,
+            reg_ppu_scroll: 0b00000000,
+            reg_ppu_addr: 0b00000000,
+            reg_ppu_data: 0b00000000
         };
         ppu
     }
@@ -43,30 +57,30 @@ impl PPU {
     }
 
     pub fn get_reg(&self, address: u16) -> u8 {
-        match address {
-            0x2000 => println!("PPU register 0x2000"),
-            0x2001 => println!("PPU register 0x2001"),
-            0x2002 => println!("PPU register 0x2002"),
-            0x2003 => println!("PPU register 0x2003"),
-            0x2004 => println!("PPU register 0x2004"),
-            0x2005 => println!("PPU register 0x2005"),
-            0x2006 => println!("PPU register 0x2006"),
-            0x2007 => println!("PPU register 0x2007"),
+        let result = match address {
+            0x2000 => self.reg_ppu_ctrl,
+            0x2001 => self.reg_ppu_mask,
+            0x2002 => self.reg_ppu_status,
+            0x2003 => self.reg_oam_addr,
+            0x2004 => self.reg_oam_data,
+            0x2005 => self.reg_ppu_scroll,
+            0x2006 => self.reg_ppu_addr,
+            0x2007 => self.reg_ppu_data,
             _ => panic!("No register at this location! ${:x}", address)
-        }
-        0
+        };
+        result
     }
 
-    pub fn write_reg(&self, address: u16, contents: u8) -> u8 {
+    pub fn write_reg(&mut self, address: u16, contents: u8) -> u8 {
         match address {
-            0x2000 => println!("PPU register 0x2000 = {:x}", contents),
-            0x2001 => println!("PPU register 0x2001 = {:x}", contents),
-            0x2002 => println!("PPU register 0x2002 = {:x}", contents),
-            0x2003 => println!("PPU register 0x2003 = {:x}", contents),
-            0x2004 => println!("PPU register 0x2004 = {:x}", contents),
-            0x2005 => println!("PPU register 0x2005 = {:x}", contents),
-            0x2006 => println!("PPU register 0x2006 = {:x}", contents),
-            0x2007 => println!("PPU register 0x2007 = {:x}", contents),
+            0x2000 => self.reg_ppu_ctrl = contents,
+            0x2001 => self.reg_ppu_mask = contents,
+            0x2002 => self.reg_ppu_status = contents,
+            0x2003 => self.reg_oam_addr = contents,
+            0x2004 => self.reg_oam_data = contents,
+            0x2005 => self.reg_ppu_scroll = contents,
+            0x2006 => self.reg_ppu_addr = contents,
+            0x2007 => self.reg_ppu_data = contents,
             _ => panic!("No register at this location! ${:x}", address)
         }
         0
