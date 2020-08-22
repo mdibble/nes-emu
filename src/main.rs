@@ -2,6 +2,8 @@
 // Developed by Matthew Dibble
 // Started August 9th, 2020
 
+extern crate sdl2;
+
 mod cartridge;
 mod nes;
 mod cpu;
@@ -26,6 +28,17 @@ fn main() {
     // nes.cpu_test("roms/nestest.nes");
 
     nes.reset();
+
+    // let sdl_context = sdl2::init().unwrap();
+    // let video_subsystem = sdl_context.video().unwrap();
+
+    // let window = video_subsystem.window("NES Emulator", 512, 480).position_centered().build().unwrap();
+    
+    // let mut canvas = window.into_canvas().build().unwrap();
+    // canvas.clear();
+    // canvas.present();
+
+    // nes.draw(&mut canvas);
 
     loop {
         nes.cycle();
