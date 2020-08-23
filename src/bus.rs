@@ -25,7 +25,7 @@ impl Bus {
         self.ppu.assign_cartridge(self.cartridge.clone());
     }
 
-    pub fn get_memory(&self, address: u16) -> u8 {
+    pub fn get_memory(&mut self, address: u16) -> u8 {
         let result: u8;
         
         match address {

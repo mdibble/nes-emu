@@ -224,7 +224,8 @@ impl CPU {
 
     pub fn dec(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
-        let new_value = self.bus.write_memory(address, self.bus.get_memory(address).wrapping_sub(1));
+        let added = self.bus.get_memory(address).wrapping_sub(1);
+        let new_value = self.bus.write_memory(address, added);
         if new_value == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if new_value & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         0
@@ -256,7 +257,8 @@ impl CPU {
 
     pub fn inc(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
-        let new_value = self.bus.write_memory(address, self.bus.get_memory(address).wrapping_add(1));
+        let added = self.bus.get_memory(address).wrapping_add(1);
+        let new_value = self.bus.write_memory(address, added);
         if new_value == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if new_value & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         0

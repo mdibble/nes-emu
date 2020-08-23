@@ -1,9 +1,11 @@
 use crate::ppu::PPU;
 
 impl PPU {
-    pub fn read_ppu_status(&self) -> u8 {
+    pub fn read_ppu_status(&mut self) -> u8 {
+        self.reg_ppu_status &= 0b01111111; // clear vertical blank
         self.reg_ppu_status
     }
+
     pub fn read_oam_data(&self) -> u8 {
         self.reg_oam_data
     }

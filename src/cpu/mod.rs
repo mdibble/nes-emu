@@ -39,8 +39,7 @@ impl CPU {
         if self.cycles == 0 {
             let opcode = self.bus.get_memory(self.pc);
             print!("${:x}:\t0x{:x}\t({:x} {:x})\t\t", self.pc, opcode, self.bus.get_memory(self.pc + 1), self.bus.get_memory(self.pc + 2));
-            print!("A:{:x}\tX:{:x}\tY:{:x}\tP:{:x}\tSP:{:x}\tCYC:{}\t\tSTK:", self.a, self.x, self.y, self.p, self.sp, self.total_cycles);
-            self.peek();
+            print!("A:{:x}\tX:{:x}\tY:{:x}\tP:{:x}\tSP:{:x}\tPPU:{}, {}\tCYC:{}", self.a, self.x, self.y, self.p, self.sp, self.bus.ppu.scanline, self.bus.ppu.cycle, self.total_cycles);
             println!("");
             self.pc_increase();
             self.cycles = self.execute(opcode) + CYCLE_TABLE[opcode as usize] as u8;
@@ -118,7 +117,7 @@ impl CPU {
         self.bus.get_memory(0x100 + self.sp as u16)
     }
 
-    pub fn peek(&self) {
+    pub fn peek(&mut self) {
         print!(" 0x{:x} ", self.sp as u16);
         for i in 0x101 + self.sp as u16..0x101 + self.sp as u16 + 5 {
             print!("{:x} ", self.bus.get_memory(i));

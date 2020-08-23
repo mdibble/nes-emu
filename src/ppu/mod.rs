@@ -1,4 +1,7 @@
 mod registers;
+mod colors;
+
+use colors::RGB;
 
 use crate::cartridge::Cartridge;
 use std::cell::RefCell;
@@ -8,8 +11,8 @@ pub struct PPU {
     nametables: [u8; 0x800],
     palettes: [u8; 0x20],
     oam_memory: [u8; 0x100],
-    scanline: u16, // 260, y-axis
-    cycle: u16, // 340, x-axis
+    pub scanline: u16, // 260, y-axis
+    pub cycle: u16, // 340, x-axis
 
     reg_ppu_ctrl: u8,       // $2000
     reg_ppu_mask: u8,       // $2001
@@ -20,13 +23,14 @@ pub struct PPU {
     reg_ppu_addr: u8,       // $2006
     reg_ppu_data: u8,       // $2007
 
-    cartridge: Option<Rc<RefCell<Cartridge>>>
+    cartridge: Option<Rc<RefCell<Cartridge>>>,
+
+    pub display: Vec<RGB>
 }
 
 impl PPU {
     pub fn new() -> PPU {
         let ppu = PPU {
-            // bus reference
             nametables: [0; 0x800],
             palettes: [0; 0x20],
             oam_memory: [0; 0x100],
@@ -41,7 +45,8 @@ impl PPU {
             reg_ppu_addr: 0b00000000,
             reg_ppu_data: 0b00000000,
 
-            cartridge: None
+            cartridge: None,
+            display: vec![RGB{ r: 0, g: 0, b: 0 }; 256 * 240]
         };
         ppu
     }
@@ -64,17 +69,18 @@ impl PPU {
 
         // VBlank
         else if self.scanline == 241 && self.cycle == 1 {
-
+            self.reg_ppu_status |= 0b10000000;
         }
 
         //VBlank off
         else if self.scanline == 261 && self.cycle == 1 {
-
+            self.reg_ppu_status &= 0b01111111;
+            self.scanline = 0;
         }
 
     }
 
-    pub fn get_reg(&self, address: u16) -> u8 {
+    pub fn get_reg(&mut self, address: u16) -> u8 {
         println!("PPU register accessed through ${:x}: read", address);
         let result = match address {
             0x2002 => self.read_ppu_status(),
