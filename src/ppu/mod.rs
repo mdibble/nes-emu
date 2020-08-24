@@ -55,27 +55,47 @@ impl PPU {
         self.cartridge = Some(cartridge);
     }
 
+    pub fn render_pixel(&self) {
+        println!("Pixel should be rendered");
+    }
+
     pub fn tick(&mut self) {
         self.cycle += 1;
         if self.cycle > 340 {
             self.cycle = 0;
             self.scanline += 1;
+            if self.scanline > 261 {
+                self.scanline = 0;
+            }
         }
 
-        // Drawing
-        if self.scanline <= 239 {
+        // Information of current scanline/cycle
+        let enable_rendering = self.reg_ppu_mask & 0b00010000 != 0 || self.reg_ppu_mask & 0b00001000 != 0;
+        let visible_line = self.scanline <= 240;
+        let visible_cycle = self.cycle >= 1 && self.cycle <= 256;
+        let render_line = visible_line || self.scanline == 261;
+
+        // Start of drawing
+
+        if enable_rendering {
+            if visible_line && visible_cycle {
+                self.render_pixel();
+            }
 
         }
+
+        // End of drawing
 
         // VBlank
-        else if self.scanline == 241 && self.cycle == 1 {
-            self.reg_ppu_status |= 0b10000000;
+        if self.scanline == 241 && self.cycle == 1 {
+            self.reg_ppu_status |= 0b10000000;  // need to revise
         }
 
         //VBlank off
-        else if self.scanline == 261 && self.cycle == 1 {
-            self.reg_ppu_status &= 0b01111111;
-            self.scanline = 0;
+        if self.scanline == 261 && self.cycle == 1 {
+            self.reg_ppu_status &= 0b01111111;  // need to revise
+            self.reg_ppu_status &= 0b10111111;  // sprite 0 hit
+            self.reg_ppu_status &= 0b11011111;  // sprite overflow
         }
 
     }
@@ -93,6 +113,11 @@ impl PPU {
 
     pub fn write_reg(&mut self, address: u16, contents: u8) -> u8 {
         println!("PPU register accessed through ${:x}: write", address);
+
+        self.reg_ppu_status = self.reg_ppu_status & 0b11100000;
+        let new_val = contents & 0x1F;
+        self.reg_ppu_status = self.reg_ppu_status | new_val;
+
         let result = match address {
             0x2000 => self.write_ppu_ctrl(contents),
             0x2001 => self.write_ppu_mask(contents),
