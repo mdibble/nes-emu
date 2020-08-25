@@ -23,9 +23,6 @@ fn main() {
     };
 
     let mut nes = NES::new(cart_data);
-    // For testing the CPU without graphics
-    // Tested until: $c6bd, cycle 14579
-    // nes.cpu_test("roms/nestest.nes");
 
     nes.reset();
 
@@ -39,6 +36,9 @@ fn main() {
     // canvas.present();
 
     // nes.draw(&mut canvas);
+
+    // When testing Donkey Kong
+    // Valid until: Cycle 27403
 
     loop {
         nes.cycle();

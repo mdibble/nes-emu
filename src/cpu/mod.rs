@@ -36,13 +36,22 @@ impl CPU {
     }
 
     pub fn tick(&mut self) {
-        if self.cycles == 0 {
+        if self.bus.ppu.trigger_nmi {
+            // Not tested, could be poorly implemented
+            self.bus.ppu.trigger_nmi = false;
+            println!("NMI triggered");
+            self.nmi();
+        }
+
+        else if self.cycles == 0 {
             let opcode = self.bus.get_memory(self.pc);
             print!("${:x}:\t0x{:x}\t({:x} {:x})\t\t", self.pc, opcode, self.bus.get_memory(self.pc + 1), self.bus.get_memory(self.pc + 2));
-            print!("A:{:x}\tX:{:x}\tY:{:x}\tP:{:x}\tSP:{:x}\tPPU:{}, {}\tCYC:{}", self.a, self.x, self.y, self.p, self.sp, self.bus.ppu.scanline, self.bus.ppu.cycle, self.total_cycles);
+            print!("A:{:x}\tX:{:x}\tY:{:x}\tP:{:x}\tSP:{:x}\tPPU:{}, {}\tCYC:{}", self.a, self.x, self.y, self.p, self.sp, self.bus.ppu.cycle, self.bus.ppu.scanline, self.total_cycles);
             println!("");
             self.pc_increase();
             self.cycles = self.execute(opcode) + CYCLE_TABLE[opcode as usize] as u8;
+            self.cycles -= 1;
+            self.total_cycles += 1;
         }
         
         else {
@@ -58,7 +67,8 @@ impl CPU {
         self.sp = 0xFD;
         self.p = 0x24;
 
-        self.cycles += 7;
+        self.total_cycles += 7;
+        self.cycles = 0;
 
         // NMI: $FFFA-$FFFB
         // RESET: $FFFC-$FFFD

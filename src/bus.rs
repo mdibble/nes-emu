@@ -23,6 +23,7 @@ impl Bus {
 
     pub fn reset(&mut self) {
         self.ppu.assign_cartridge(self.cartridge.clone());
+        self.ppu.reset();
     }
 
     pub fn get_memory(&mut self, address: u16) -> u8 {

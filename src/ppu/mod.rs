@@ -23,6 +23,8 @@ pub struct PPU {
     reg_ppu_addr: u8,       // $2006
     reg_ppu_data: u8,       // $2007
 
+    pub trigger_nmi: bool,
+
     cartridge: Option<Rc<RefCell<Cartridge>>>,
 
     pub display: Vec<RGB>
@@ -45,10 +47,25 @@ impl PPU {
             reg_ppu_addr: 0b00000000,
             reg_ppu_data: 0b00000000,
 
+            trigger_nmi: false,
+
             cartridge: None,
             display: vec![RGB{ r: 0, g: 0, b: 0 }; 256 * 240]
         };
         ppu
+    }
+
+    pub fn reset(&mut self) {
+        self.cycle = 0;
+        self.scanline = 0;
+        self.reg_ppu_ctrl = 0b00000000;
+        self.reg_ppu_mask = 0b00000000;
+        self.reg_ppu_status = 0b00000000;
+        self.reg_oam_addr = 0b00000000;
+        self.reg_oam_data = 0b00000000;
+        self.reg_ppu_scroll = 0b00000000;
+        self.reg_ppu_addr = 0b00000000;
+        self.reg_ppu_data = 0b00000000; 
     }
 
     pub fn assign_cartridge(&mut self, cartridge: Rc<RefCell<Cartridge>>) {
@@ -88,12 +105,18 @@ impl PPU {
 
         // VBlank
         if self.scanline == 241 && self.cycle == 1 {
-            self.reg_ppu_status |= 0b10000000;  // need to revise
+            self.reg_ppu_status |= 0b10000000;  
+            println!("VBLANK has begun - CTRL: {:08b}", self.reg_ppu_ctrl);
+            if self.reg_ppu_ctrl & 0b10000000 == 0b10000000 {
+                self.trigger_nmi = true;
+                panic!("Interrupt Requested"); // placeholder
+            }
         }
 
         //VBlank off
         if self.scanline == 261 && self.cycle == 1 {
-            self.reg_ppu_status &= 0b01111111;  // need to revise
+            println!("VBLANK has ended");
+            self.reg_ppu_status &= 0b01111111;  
             self.reg_ppu_status &= 0b10111111;  // sprite 0 hit
             self.reg_ppu_status &= 0b11011111;  // sprite overflow
         }
@@ -102,6 +125,7 @@ impl PPU {
 
     pub fn get_reg(&mut self, address: u16) -> u8 {
         println!("PPU register accessed through ${:x}: read", address);
+
         let result = match address {
             0x2002 => self.read_ppu_status(),
             0x2004 => self.read_oam_data(),
