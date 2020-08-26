@@ -109,7 +109,6 @@ impl PPU {
             println!("VBLANK has begun - CTRL: {:08b}", self.reg_ppu_ctrl);
             if self.reg_ppu_ctrl & 0b10000000 == 0b10000000 {
                 self.trigger_nmi = true;
-                panic!("Interrupt Requested"); // placeholder
             }
         }
 
@@ -136,7 +135,7 @@ impl PPU {
     }
 
     pub fn write_reg(&mut self, address: u16, contents: u8) -> u8 {
-        println!("PPU register accessed through ${:x}: write", address);
+        println!("PPU register accessed through ${:x}: write ({:x})", address, contents);
 
         self.reg_ppu_status = self.reg_ppu_status & 0b11100000;
         let new_val = contents & 0x1F;

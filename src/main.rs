@@ -38,7 +38,7 @@ fn main() {
     // nes.draw(&mut canvas);
 
     // When testing Donkey Kong
-    // Valid until: Cycle 27403
+    //  Cycle 86960: First IRQ
 
     loop {
         nes.cycle();
