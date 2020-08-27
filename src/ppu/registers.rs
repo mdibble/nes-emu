@@ -15,7 +15,15 @@ impl PPU {
 
     pub fn read_ppu_data(&self) -> u8 {
         panic!("Tried to read PPU data");
-        self.reg_ppu_data
+        let result = self.get_memory(self.vram_address);
+        // Deal with buffering
+        if self.reg_ppu_ctrl & 0b00000100 == 0b00000100 {
+            self.vram_address += 32;
+        }
+        else {
+            self.vram_address += 1;
+        }
+        result
     }
 
     pub fn write_ppu_ctrl(&mut self, contents: u8) -> u8 {
