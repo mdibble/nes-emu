@@ -1,6 +1,9 @@
-// NES Emulator written in Rust
+// NES emulator written in Rust
 // Developed by Matthew Dibble
 // Started August 9th, 2020
+
+// "For young players, classic games are brand new." 
+//  -Satoru Iwata
 
 extern crate sdl2;
 
