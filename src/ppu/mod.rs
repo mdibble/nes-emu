@@ -23,10 +23,12 @@ pub struct PPU {
     reg_ppu_addr: u8,       // $2006
     reg_ppu_data: u8,       // $2007
 
-    vram_address: u16,
+    x_scroll: u8,
 
+    vram_address: u16,
     temp_address: u16,
     writing: bool,
+
     pub trigger_nmi: bool,
 
     cartridge: Option<Rc<RefCell<Cartridge>>>,
@@ -51,10 +53,12 @@ impl PPU {
             reg_ppu_addr: 0b00000000,
             reg_ppu_data: 0b00000000,
 
-            vram_address: 0x0000,
+            x_scroll: 0,
 
+            vram_address: 0x0000,
             temp_address: 0x0000,
             writing: false,
+
             trigger_nmi: false,
 
             cartridge: None,

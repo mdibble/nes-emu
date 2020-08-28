@@ -28,6 +28,8 @@ impl PPU {
 
     pub fn write_ppu_ctrl(&mut self, contents: u8) -> u8 {
         self.reg_ppu_ctrl = contents;
+        self.temp_address &= 0xF3FF;
+        self.temp_address |= (contents as u16 & 0x3) << 10;
         self.reg_ppu_ctrl
     }
 
@@ -47,14 +49,26 @@ impl PPU {
     }
 
     pub fn write_ppu_scroll(&mut self, contents: u8) -> u8 {
-        self.reg_ppu_scroll = contents;
-        // need to use the writing flag here
+        if self.writing == false {
+            self.temp_address &= 0b1111111111100000;
+            self.temp_address |= (contents as u16) >> 3;
+            self.x_scroll = contents & 0b00000111;
+            self.writing = true;
+        }
+        else {
+            self.temp_address &= 0b1000110000011111;
+            self.temp_address |= contents as u16 & 0x07 << 12;
+            self.temp_address |= contents as u16 & 0xF8 << 2;
+            self.writing = false;
+        }
+
         self.reg_ppu_scroll
     }
 
     pub fn write_ppu_addr(&mut self, contents: u8) -> u8 {
         if self.writing == false {
             self.temp_address = (contents as u16) << 8;
+            self.temp_address &= 0b1011111111111111;
             self.writing = true;
         }
         else {
@@ -63,10 +77,7 @@ impl PPU {
             self.writing = false;
         }
 
-        println!("{:04x}", self.temp_address);
-
         self.reg_ppu_addr = contents;
-        //panic!("Tried to write to PPUADDR");
         self.reg_ppu_addr
     }
 
