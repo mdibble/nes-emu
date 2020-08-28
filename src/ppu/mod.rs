@@ -100,25 +100,45 @@ impl PPU {
 
         // Information of current scanline/cycle
         let enable_rendering = self.reg_ppu_mask & 0b00010000 != 0 || self.reg_ppu_mask & 0b00001000 != 0;
-        let visible_line = self.scanline <= 240;
+        let visible_scanline = self.scanline <= 239;
+        let prerender_scanline = self.scanline == 261;
         let visible_cycle = self.cycle >= 1 && self.cycle <= 256;
-        let render_line = visible_line || self.scanline == 261;
+        let fetch_cycle = self.cycle >= 321 && self.cycle <= 336;
 
         // Start of drawing
 
         if enable_rendering {
-            if visible_line && visible_cycle {
+            if visible_scanline && visible_cycle {
                 self.render_pixel();
             }
 
+            // Handling VRAM fetches (beige blocks on NTSC timing diagram)
+            if (visible_scanline || prerender_scanline) && (visible_cycle || fetch_cycle) {
+                
+            }
+
+            // Handling register changes (red blocks on NTSC timing diagram)
+            if (visible_scanline || prerender_scanline) && (visible_cycle || fetch_cycle) {
+                if self.cycle % 8 == 0 {
+                    self.x_increment();
+                }
+                if self.cycle == 256 {
+                    self.y_increment();
+                }
+                if self.cycle == 257 {
+                    // hori(v) = hori(t)
+                }
+                if prerender_scanline && self.cycle >= 280 && self.cycle <= 304 {
+                    // vert(v) = vert(t)
+                }
+            }
         }
 
         // End of drawing
 
         // VBlank
         if self.scanline == 241 && self.cycle == 1 {
-            self.reg_ppu_status |= 0b10000000;  
-            println!("VBLANK has begun - CTRL: {:08b}", self.reg_ppu_ctrl);
+            self.reg_ppu_status |= 0b10000000;
             if self.reg_ppu_ctrl & 0b10000000 == 0b10000000 {
                 self.trigger_nmi = true;
             }
@@ -126,12 +146,41 @@ impl PPU {
 
         //VBlank off
         if self.scanline == 261 && self.cycle == 1 {
-            println!("VBLANK has ended");
             self.reg_ppu_status &= 0b01111111;  
             self.reg_ppu_status &= 0b10111111;  // sprite 0 hit
             self.reg_ppu_status &= 0b11011111;  // sprite overflow
         }
+    }
 
+    pub fn x_increment(&mut self) {
+        if self.vram_address & 0x001F == 31 {
+            self.vram_address &= !0x001F;
+            self.vram_address ^= 0x0400;
+        }
+        else {
+            self.vram_address += 1;
+        }
+    }
+
+    pub fn y_increment(&mut self) {
+        if (self.vram_address & 0x7000) != 0x7000 {
+            self.vram_address += 0x1000;
+        }
+        else {
+            self.vram_address &= !0x7000;
+            let mut y = (self.vram_address & 0x03E0) >> 5;
+            if y == 29 {
+                y = 0;
+                self.vram_address ^= 0x0800;
+            }
+            else if y == 31 {
+                y = 0;
+            }
+            else {
+                y += 1;
+            }
+            self.vram_address = (self.vram_address & !0x03E0) | (y << 5);
+        }
     }
 
     pub fn get_reg(&mut self, address: u16) -> u8 {
@@ -167,7 +216,6 @@ impl PPU {
     }
 
     pub fn get_memory(&self, address: u16) -> u8 {
-        println!("PPU memory accessed: read");
         let result = match address {
             0x0000..=0x1FFF => match self.cartridge {
                 Some(ref cart) => cart.borrow().read(address),
@@ -181,7 +229,6 @@ impl PPU {
     }
 
     pub fn write_memory(&mut self, address: u16, contents: u8) -> u8 {
-        println!("PPU memory accessed: write");
         let result = match address {
             0x0000..=0x1FFF => match self.cartridge {
                 Some(ref cart) => cart.borrow_mut().write(address, contents),
