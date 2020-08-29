@@ -29,6 +29,11 @@ pub struct PPU {
     temp_address: u16,
     writing: bool,
 
+    fetched_nt: u8,
+    fetched_at: u8,
+    fetched_bg_lo: u8,
+    fetched_bg_hi: u8,
+
     pub trigger_nmi: bool,
 
     cartridge: Option<Rc<RefCell<Cartridge>>>,
@@ -59,6 +64,11 @@ impl PPU {
             temp_address: 0x0000,
             writing: false,
 
+            fetched_nt: 0,
+            fetched_at: 0,
+            fetched_bg_lo: 0,
+            fetched_bg_hi: 0,
+
             trigger_nmi: false,
 
             cartridge: None,
@@ -82,6 +92,22 @@ impl PPU {
 
     pub fn assign_cartridge(&mut self, cartridge: Rc<RefCell<Cartridge>>) {
         self.cartridge = Some(cartridge);
+    }
+
+    pub fn fetch_nt(&mut self) {
+        self.fetched_nt = self.get_memory(0x2000 | (self.vram_address & 0x0FFF));
+    }
+
+    pub fn fetch_at(&mut self) {
+        
+    }
+
+    pub fn fetch_bg_lo(&mut self) {
+        
+    }
+
+    pub fn fetch_bg_hi(&mut self) {
+        
     }
 
     pub fn render_pixel(&self) {
@@ -114,7 +140,13 @@ impl PPU {
 
             // Handling VRAM fetches (beige blocks on NTSC timing diagram)
             if (visible_scanline || prerender_scanline) && (visible_cycle || fetch_cycle) {
-                
+                match self.cycle % 8 {
+                    1 => self.fetch_nt(),
+                    3 => self.fetch_at(),
+                    5 => self.fetch_bg_lo(),
+                    7 => self.fetch_bg_hi(),
+                    _ => {}
+                }
             }
 
             // Handling register changes (red blocks on NTSC timing diagram)
@@ -221,7 +253,7 @@ impl PPU {
                 Some(ref cart) => cart.borrow().read(address),
                 _ => panic!("PPU unable to read address ${:x} from cartridge", address)
             }
-            0x2000..=0x3EFF => self.nametables[address as usize - 0x2000],
+            0x2000..=0x3EFF => self.nametables[(address as usize - 0x2000) % 0x800], // this should factor in mirroring, not yet implemented
             0x3F00..=0x3FFF => self.palettes[address as usize - 0x3F00],
             _ => panic!("PPU requested read outside of memory range: ${:x}", address)
         };
