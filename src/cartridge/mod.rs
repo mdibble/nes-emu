@@ -26,11 +26,19 @@ impl Cartridge {
         cartridge
     }
 
-    pub fn read(&self, address: u16) -> u8 {
-        self.mapper.read(address)
+    pub fn prg_read(&self, address: u16) -> u8 {
+        self.mapper.prg_read(address)
     }
 
-    pub fn write(&mut self, address: u16, contents: u8) -> u8 {
-        self.mapper.write(address, contents)
+    pub fn prg_write(&mut self, address: u16, contents: u8) -> u8 {
+        self.mapper.prg_write(address, contents)
+    }
+
+    pub fn chr_read(&self, address: u16) -> u8 {
+        self.mapper.chr_read(address)
+    }
+
+    pub fn chr_write(&mut self, address: u16, contents: u8) -> u8 {
+        self.mapper.chr_write(address, contents)
     }
 }

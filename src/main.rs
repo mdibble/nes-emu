@@ -32,7 +32,7 @@ fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-    let window = video_subsystem.window("NES Emulator", 512, 480).position_centered().build().unwrap();
+    let window = video_subsystem.window("NES Emulator", 256 * 4, 240 * 2).position_centered().build().unwrap();
     
     let mut canvas = window.into_canvas().build().unwrap();
     canvas.clear();
@@ -42,7 +42,6 @@ fn main() {
         nes.cycle();
         if nes.cpu.bus.ppu.draw {
             nes.draw(&mut canvas);
-            //println!("Frame rendered");
         }
     }
 }

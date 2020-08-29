@@ -8,7 +8,7 @@ pub struct Bus {
     memory: [u8; 0x10000],
     pub ppu: PPU,
     // apu: APU
-    cartridge: Rc<RefCell<Cartridge>>
+    pub cartridge: Rc<RefCell<Cartridge>>
 }
 
 impl Bus {
@@ -49,7 +49,7 @@ impl Bus {
             }
             0x4020..=0xFFFF => {
                 // Cartridge space
-                result = self.cartridge.borrow().read(address);
+                result = self.cartridge.borrow().prg_read(address);
             }
         }
         result
@@ -63,7 +63,6 @@ impl Bus {
             }
             0x2000..=0x3FFF => {
                 // PPU registers
-                // self.memory[address as usize % 0x8] = contents;
                 self.ppu.write_reg(address, contents);
             }
             0x4000..=0x4017 => {
@@ -76,7 +75,7 @@ impl Bus {
             }
             0x4020..=0xFFFF => {
                 // Cartridge space
-                self.cartridge.borrow_mut().write(address, contents);
+                self.cartridge.borrow_mut().prg_write(address, contents);
                 self.memory[address as usize] = contents;
             }
         }

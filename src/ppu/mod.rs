@@ -165,6 +165,10 @@ impl PPU {
                 }
             }
 
+            if (visible_scanline || prerender_scanline) && (self.cycle == 337 || self.cycle == 339) {
+                self.fetch_nt();
+            }
+
             // Handling register changes (red blocks on NTSC timing diagram)
             if (visible_scanline || prerender_scanline) && (visible_cycle || fetch_cycle) {
                 if self.cycle % 8 == 0 {
@@ -273,7 +277,7 @@ impl PPU {
     pub fn get_memory(&self, address: u16) -> u8 {
         let result = match address {
             0x0000..=0x1FFF => match self.cartridge {
-                Some(ref cart) => cart.borrow().read(address + 0x6000),
+                Some(ref cart) => cart.borrow().chr_read(address),
                 _ => panic!("PPU unable to read address ${:x} from cartridge", address)
             }
             0x2000..=0x3EFF => self.nametables[(address as usize - 0x2000) % 0x800], // this should factor in mirroring, not yet implemented
@@ -286,7 +290,7 @@ impl PPU {
     pub fn write_memory(&mut self, address: u16, contents: u8) -> u8 {
         let result = match address {
             0x0000..=0x1FFF => match self.cartridge {
-                Some(ref cart) => cart.borrow_mut().write(address + 0x6000, contents),
+                Some(ref cart) => cart.borrow_mut().chr_write(address, contents),
                 _ => panic!("PPU unable to write address ${:x} to cartridge", address)
             }
             0x2000..=0x3EFF => { self.nametables[(address as usize - 0x2000) % 0x800] = contents; contents }, // mirroring needed

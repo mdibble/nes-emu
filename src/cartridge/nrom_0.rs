@@ -14,7 +14,7 @@ impl NROM {
 }
 
 impl Mapper for NROM {
-    fn read(&self, address: u16) -> u8 {
+    fn prg_read(&self, address: u16) -> u8 {
         let val = match address {
             0x6000..=0x7FFF => self.data.prg_ram[address as usize - 0x6000],
             0x8000..=0xBFFF => self.data.prg_rom[address as usize - 0x8000],
@@ -23,7 +23,7 @@ impl Mapper for NROM {
         };
         val
     }
-    fn write(&mut self, address: u16, contents: u8) -> u8 {
+    fn prg_write(&mut self, address: u16, contents: u8) -> u8 {
         match address {
             0x6000..=0x7FFF => self.data.prg_ram[address as usize - 0x6000] = contents,
             0x8000..=0xBFFF => self.data.prg_rom[address as usize - 0x8000] = contents,
@@ -33,6 +33,20 @@ impl Mapper for NROM {
             }, 
             _ => panic!("Invalid read!")
         };
+        contents
+    }
+    fn chr_read(&self, address: u16) -> u8 {
+        if self.data.header.chr_rom_size == 0 {
+            self.data.chr_ram[address as usize]
+        }
+        else {
+            self.data.chr_rom[address as usize]
+        }
+    }
+    fn chr_write(&mut self, address: u16, contents: u8) -> u8 {
+        if self.data.header.chr_rom_size == 0 {
+            self.data.chr_ram[address as usize] = contents;
+        }
         contents
     }
 }
