@@ -38,10 +38,8 @@ impl CPU {
     pub fn tick(&mut self) {
         if self.cycles == 0 {
             if self.bus.ppu.trigger_nmi {
-                // Not tested, could be poorly implemented
                 // CPU must wait until the end of the current instruction to issue an NMI
                 self.bus.ppu.trigger_nmi = false;
-                println!("NMI triggered");
                 self.nmi();
             }
             else {

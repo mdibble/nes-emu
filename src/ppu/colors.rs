@@ -6,12 +6,20 @@ pub struct RGB {
 }
 
 pub const SYS_COLORS: [RGB; 64] = [
-    RGB{r: 84, g: 84, b: 84}, RGB{r: 0, g: 30, b: 116}, RGB{r: 8, g: 16, b: 144}, RGB{r: 48, g: 0, b: 136}, RGB{r: 68, g: 0, b: 100}, RGB{r: 92, g: 0, b: 48}, RGB{r: 84, g: 4, b: 0}, RGB{r: 60, g: 24, b: 0}, 
-    RGB{r: 32, g: 42, b: 0}, RGB{r: 8, g: 58, b: 0}, RGB{r: 0, g: 64, b: 0}, RGB{r: 0, g: 60, b: 0}, RGB{r: 0, g: 50, b: 60}, RGB{r: 0, g: 0, b: 0}, RGB{r: 152, g: 150, b: 152}, RGB{r: 8, g: 76, b: 196}, 
-    RGB{r: 48, g: 50, b: 236}, RGB{r: 92, g: 30, b: 228}, RGB{r: 136, g: 20, b: 176}, RGB{r: 160, g: 20, b: 100}, RGB{r: 152, g: 34, b: 32}, RGB{r: 120, g: 60, b: 0}, RGB{r: 84, g: 90, b: 0}, RGB{r: 40, g: 114, b: 0}, 
-    RGB{r: 8, g: 124, b: 0}, RGB{r: 0, g: 118, b: 40}, RGB{r: 0, g: 102, b: 120}, RGB{r: 0, g: 0, b: 0}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, 
-    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, 
-    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, 
-    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, 
-    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, 
+    RGB{r: 0x75, g: 0x75, b: 0x75}, RGB{r: 0x27, g: 0x1B, b: 0x8F}, RGB{r: 0x00, g: 0x00, b: 0xAB}, RGB{r: 0x47, g: 0x00, b: 0x9F},
+    RGB{r: 0x8F, g: 0x00, b: 0x77}, RGB{r: 0xAB, g: 0x00, b: 0x13}, RGB{r: 0xA7, g: 0x00, b: 0x00}, RGB{r: 0x7F, g: 0x0B, b: 0x00}, 
+    RGB{r: 0x43, g: 0x2F, b: 0x00}, RGB{r: 0x00, g: 0x47, b: 0x00}, RGB{r: 0x00, g: 0x51, b: 0x00}, RGB{r: 0x00, g: 0x3F, b: 0x17},
+    RGB{r: 0x1B, g: 0x3F, b: 0x5F}, RGB{r: 0x00, g: 0x00, b: 0x00}, RGB{r: 0x00, g: 0x00, b: 0x00}, RGB{r: 0x00, g: 0x00, b: 0x00}, 
+    RGB{r: 0xBC, g: 0xBC, b: 0xBC}, RGB{r: 0x00, g: 0x73, b: 0xEF}, RGB{r: 0x23, g: 0x3B, b: 0xEF}, RGB{r: 0x83, g: 0x00, b: 0xF3},
+    RGB{r: 0xBF, g: 0x00, b: 0xBF}, RGB{r: 0xE7, g: 0x00, b: 0x5B}, RGB{r: 0xDB, g: 0x2B, b: 0x00}, RGB{r: 0xCB, g: 0x4F, b: 0x0F}, 
+    RGB{r: 0x8B, g: 0x73, b: 0x00}, RGB{r: 0x00, g: 0x97, b: 0x00}, RGB{r: 0x00, g: 0xAB, b: 0x00}, RGB{r: 0x00, g: 0x93, b: 0x3B},
+    RGB{r: 0x00, g: 0x83, b: 0x8B}, RGB{r: 0x00, g: 0x00, b: 0x00}, RGB{r: 0x00, g: 0x00, b: 0x00}, RGB{r: 0x00, g: 0x00, b: 0x00}, 
+    RGB{r: 0xFF, g: 0xFF, b: 0xFF}, RGB{r: 0x3F, g: 0xBF, b: 0xFF}, RGB{r: 0x5F, g: 0x97, b: 0xFF}, RGB{r: 0xA7, g: 0x8B, b: 0xFD},
+    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, 
+    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3},
+    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, 
+    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3},
+    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, 
+    RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3}, RGB{r: 1, g: 2, b: 3},
+    RGB{r: 0x9F, g: 0xFF, b: 0xF3}, RGB{r: 0x00, g: 0x00, b: 0x00}, RGB{r: 0x00, g: 0x00, b: 0x00}, RGB{r: 0x00, g: 0x00, b: 0x00}, 
 ];

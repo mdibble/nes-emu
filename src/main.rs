@@ -29,21 +29,20 @@ fn main() {
 
     nes.reset();
 
-    // let sdl_context = sdl2::init().unwrap();
-    // let video_subsystem = sdl_context.video().unwrap();
+    let sdl_context = sdl2::init().unwrap();
+    let video_subsystem = sdl_context.video().unwrap();
 
-    // let window = video_subsystem.window("NES Emulator", 512, 480).position_centered().build().unwrap();
+    let window = video_subsystem.window("NES Emulator", 512, 480).position_centered().build().unwrap();
     
-    // let mut canvas = window.into_canvas().build().unwrap();
-    // canvas.clear();
-    // canvas.present();
-
-    // nes.draw(&mut canvas);
-
-    // When testing Donkey Kong
-    //  Cycle 86960: First IRQ
+    let mut canvas = window.into_canvas().build().unwrap();
+    canvas.clear();
+    canvas.present();
 
     loop {
         nes.cycle();
+        if nes.cpu.bus.ppu.draw {
+            nes.draw(&mut canvas);
+            //println!("Frame rendered");
+        }
     }
 }

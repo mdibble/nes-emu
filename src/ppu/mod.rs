@@ -3,6 +3,8 @@ mod colors;
 
 use colors::RGB;
 
+use colors::SYS_COLORS;
+
 use crate::cartridge::Cartridge;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -38,7 +40,8 @@ pub struct PPU {
 
     cartridge: Option<Rc<RefCell<Cartridge>>>,
 
-    pub display: Vec<RGB>
+    pub display: Vec<RGB>,
+    pub draw: bool
 }
 
 impl PPU {
@@ -72,7 +75,9 @@ impl PPU {
             trigger_nmi: false,
 
             cartridge: None,
-            display: vec![RGB{ r: 0, g: 0, b: 0 }; 256 * 240]
+
+            display: vec![RGB{ r: 0, g: 0, b: 0 }; 256 * 240],
+            draw: false
         };
         ppu
     }
@@ -99,19 +104,30 @@ impl PPU {
     }
 
     pub fn fetch_at(&mut self) {
-        
+        let address = 0x23C0 | (self.vram_address & 0x0C00) | ((self.vram_address >> 4) & 0x38) | ((self.vram_address >> 2) & 0x07);
+        let shift = ((self.vram_address >> 4) & 4) | (self.vram_address & 2);
+        self.fetched_at = ((self.get_memory(address) >> shift) & 3) << 2;
     }
 
     pub fn fetch_bg_lo(&mut self) {
-        
+        let background_table = (self.reg_ppu_ctrl >> 4) & 0x01;
+        let address = (0x1000 * background_table as u16) + (self.fetched_nt as u16 * 16) + ((self.vram_address >> 12) & 7);
+        self.fetched_bg_lo = self.get_memory(address);
     }
 
     pub fn fetch_bg_hi(&mut self) {
-        
+        let background_table = (self.reg_ppu_ctrl >> 4) & 0x01;
+        let address = (0x1000 * background_table as u16) + (self.fetched_nt as u16 * 16) + ((self.vram_address >> 12) & 7);
+        self.fetched_bg_hi = self.get_memory(address + 8);
     }
 
-    pub fn render_pixel(&self) {
-        println!("Pixel should be rendered");
+    pub fn render_pixel(&mut self) {
+        //println!("Pixel should be rendered");
+        let row = self.scanline;
+        let col = self.cycle - 1;
+        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[self.fetched_nt as usize % 64].r;
+        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[self.fetched_nt as usize % 64].g;
+        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[self.fetched_nt as usize % 64].b;
     }
 
     pub fn tick(&mut self) {
@@ -159,9 +175,11 @@ impl PPU {
                 }
                 if self.cycle == 257 {
                     // hori(v) = hori(t)
+                    self.x_copy();
                 }
                 if prerender_scanline && self.cycle >= 280 && self.cycle <= 304 {
                     // vert(v) = vert(t)
+                    self.y_copy();
                 }
             }
         }
@@ -170,6 +188,7 @@ impl PPU {
 
         // VBlank
         if self.scanline == 241 && self.cycle == 1 {
+            self.draw = true;
             self.reg_ppu_status |= 0b10000000;
             if self.reg_ppu_ctrl & 0b10000000 == 0b10000000 {
                 self.trigger_nmi = true;
@@ -215,9 +234,15 @@ impl PPU {
         }
     }
 
-    pub fn get_reg(&mut self, address: u16) -> u8 {
-        println!("PPU register accessed through ${:x}: read", address);
+    pub fn x_copy(&mut self) {
+        self.vram_address = (self.vram_address & 0xFBE0) | (self.temp_address & 0x041F);
+    }
 
+    pub fn y_copy(&mut self) {
+        self.vram_address = (self.vram_address & 0x841F) | (self.temp_address & 0x7BE0);
+    }
+
+    pub fn get_reg(&mut self, address: u16) -> u8 {
         let result = match address {
             0x2002 => self.read_ppu_status(),
             0x2004 => self.read_oam_data(),
@@ -228,8 +253,6 @@ impl PPU {
     }
 
     pub fn write_reg(&mut self, address: u16, contents: u8) -> u8 {
-        println!("PPU register accessed through ${:x}: write ({:x})", address, contents);
-
         self.reg_ppu_status = self.reg_ppu_status & 0b11100000;
         let new_val = contents & 0x1F;
         self.reg_ppu_status = self.reg_ppu_status | new_val;
@@ -250,7 +273,7 @@ impl PPU {
     pub fn get_memory(&self, address: u16) -> u8 {
         let result = match address {
             0x0000..=0x1FFF => match self.cartridge {
-                Some(ref cart) => cart.borrow().read(address),
+                Some(ref cart) => cart.borrow().read(address + 0x6000),
                 _ => panic!("PPU unable to read address ${:x} from cartridge", address)
             }
             0x2000..=0x3EFF => self.nametables[(address as usize - 0x2000) % 0x800], // this should factor in mirroring, not yet implemented
@@ -263,10 +286,10 @@ impl PPU {
     pub fn write_memory(&mut self, address: u16, contents: u8) -> u8 {
         let result = match address {
             0x0000..=0x1FFF => match self.cartridge {
-                Some(ref cart) => cart.borrow_mut().write(address, contents),
+                Some(ref cart) => cart.borrow_mut().write(address + 0x6000, contents),
                 _ => panic!("PPU unable to write address ${:x} to cartridge", address)
             }
-            0x2000..=0x3EFF => { self.nametables[address as usize - 0x2000] = contents; contents },
+            0x2000..=0x3EFF => { self.nametables[(address as usize - 0x2000) % 0x800] = contents; contents }, // mirroring needed
             0x3F00..=0x3FFF => { self.palettes[address as usize - 0x3F00] = contents; contents },
             _ => panic!("PPU requested write outside of memory range: ${:x}", address)
         };

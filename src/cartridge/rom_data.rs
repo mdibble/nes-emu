@@ -16,7 +16,14 @@ impl RomData {
         prg_rom.resize(header.prg_rom_size as usize * 0x4000, 0);
 
         let mut chr_rom = Vec::new();
-        chr_rom.resize(header.prg_rom_size as usize * 0x2000, 0);
+        chr_rom.resize(header.chr_rom_size as usize * 0x2000, 0);
+
+        let mut prg_ram = Vec::new();
+
+        match header.mapper_id {
+            0 => prg_ram.resize(0x2000, 0),
+            _ => { }
+        }
 
         let mut anchor = if header.trainer { 0x210 } else { 0x10 };
 
@@ -33,7 +40,7 @@ impl RomData {
         let rom_data = RomData {
             header: header,
             prg_rom: prg_rom,
-            prg_ram: Vec::new(),
+            prg_ram: prg_ram,
             chr_rom: chr_rom,
             chr_ram: Vec::new()
         };
