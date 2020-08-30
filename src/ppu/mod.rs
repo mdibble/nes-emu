@@ -43,6 +43,7 @@ pub struct PPU {
 
     cartridge: Option<Rc<RefCell<Cartridge>>>,
 
+    even_frame: bool,
     pub display: Vec<RGB>,
     pub draw: bool
 }
@@ -54,7 +55,7 @@ impl PPU {
             palettes: [0; 0x20],
             oam_memory: [0; 0x100],
             scanline: 0,
-            cycle: 0,
+            cycle: 0, // maybe should be 341?
             reg_ppu_ctrl: 0b00000000,
             reg_ppu_mask: 0b00000000,
             reg_ppu_status: 0b00000000,
@@ -82,6 +83,7 @@ impl PPU {
 
             cartridge: None,
 
+            even_frame: true,
             display: vec![RGB{ r: 0, g: 0, b: 0 }; 256 * 240],
             draw: false
         };
@@ -127,19 +129,29 @@ impl PPU {
     pub fn store_tile_data(&mut self) {
         self.shift_reg_pt_lo = (self.shift_reg_pt_lo & 0x00FF) | (self.fetched_bg_lo as u16) << 8;
         self.shift_reg_pt_hi = (self.shift_reg_pt_hi & 0x00FF) | (self.fetched_bg_hi as u16) << 8;
+
+        self.shift_reg_palette_lo = (self.shift_reg_palette_lo & 0x00FF) | if self.fetched_at & 0b01 != 0 { 0xFF } else { 0x00 };
+        self.shift_reg_palette_hi = (self.shift_reg_palette_hi & 0x00FF) | if self.fetched_at & 0b10 != 0 { 0xFF } else { 0x00 };
     }
 
     pub fn update_tile_data(&mut self) {
         self.shift_reg_pt_lo >>= 1;
         self.shift_reg_pt_hi >>= 1;
+
+        self.shift_reg_palette_lo >>= 1;
+        self.shift_reg_palette_hi >>= 1;
     }
 
     pub fn render_pixel(&mut self) {
         let row = self.scanline;
         let col = self.cycle - 1;
-        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[self.shift_reg_pt_hi as usize % 64].r;
-        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[self.shift_reg_pt_hi as usize % 64].g;
-        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[self.shift_reg_pt_hi as usize % 64].b;
+
+        let pixel = (self.shift_reg_pt_lo & 1) + (self.shift_reg_pt_hi & 1) << 1;
+        let palette = (self.shift_reg_palette_lo & 1) + (self.shift_reg_palette_hi & 1) << 1;
+
+        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[pixel as usize % 64].r;
+        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[pixel as usize % 64].g;
+        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[pixel as usize % 64].b;
     }
 
     pub fn tick(&mut self) {
@@ -149,11 +161,20 @@ impl PPU {
             self.scanline += 1;
             if self.scanline > 261 {
                 self.scanline = 0;
+
+                if self.even_frame {
+                    self.cycle += 1;
+                }
+                self.even_frame = !self.even_frame;
             }
         }
 
+        //println!("PPU: {:03}, {:03}", self.scanline, self.cycle);
+
+        //panic!();
+
         // Information of current scanline/cycle
-        let enable_rendering = self.reg_ppu_mask & 0b00010000 != 0 || self.reg_ppu_mask & 0b00001000 != 0;
+        let enable_rendering = self.reg_ppu_mask & 0b00011000 != 0;
         let visible_scanline = self.scanline <= 239;
         let prerender_scanline = self.scanline == 261;
         let visible_cycle = self.cycle >= 1 && self.cycle <= 256;
@@ -184,8 +205,8 @@ impl PPU {
             }
 
             // Handling register changes (red blocks on NTSC timing diagram)
-            if (visible_scanline || prerender_scanline) && (visible_cycle || fetch_cycle) {
-                if self.cycle % 8 == 0 {
+            if (visible_scanline || prerender_scanline) && (visible_cycle || fetch_cycle || self.cycle == 257) {
+                if self.cycle % 8 == 0 && self.cycle != 256 {
                     self.x_increment();
                 }
                 if self.cycle == 256 {
@@ -195,10 +216,11 @@ impl PPU {
                     // hori(v) = hori(t)
                     self.x_copy();
                 }
-                if prerender_scanline && self.cycle >= 280 && self.cycle <= 304 {
-                    // vert(v) = vert(t)
-                    self.y_copy();
-                }
+            }
+
+            if prerender_scanline && self.cycle >= 280 && self.cycle <= 304 {
+                // vert(v) = vert(t)
+                self.y_copy();
             }
         }
 
@@ -206,7 +228,7 @@ impl PPU {
 
         // VBlank
         if self.scanline == 241 && self.cycle == 1 {
-            self.draw = true;
+            self.draw = true; // ready to draw to canvas
             self.reg_ppu_status |= 0b10000000;
             if self.reg_ppu_ctrl & 0b10000000 == 0b10000000 {
                 self.trigger_nmi = true;
