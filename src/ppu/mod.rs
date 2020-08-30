@@ -127,16 +127,16 @@ impl PPU {
     }
 
     pub fn store_tile_data(&mut self) {
-        self.shift_reg_pt_lo = (self.shift_reg_pt_lo & 0x00FF) | (self.fetched_bg_lo as u16) << 8;
-        self.shift_reg_pt_hi = (self.shift_reg_pt_hi & 0x00FF) | (self.fetched_bg_hi as u16) << 8;
+        self.shift_reg_pt_lo = (self.shift_reg_pt_lo & 0xFF00) | (self.fetched_bg_lo as u16);
+        self.shift_reg_pt_hi = (self.shift_reg_pt_hi & 0xFF00) | (self.fetched_bg_hi as u16);
 
-        self.shift_reg_palette_lo = (self.shift_reg_palette_lo & 0x00FF) | if self.fetched_at & 0b01 != 0 { 0xFF } else { 0x00 };
-        self.shift_reg_palette_hi = (self.shift_reg_palette_hi & 0x00FF) | if self.fetched_at & 0b10 != 0 { 0xFF } else { 0x00 };
+        self.shift_reg_palette_lo = self.shift_reg_palette_lo << 1 | self.shift_reg_palette_lo;
+        self.shift_reg_palette_hi = self.shift_reg_palette_hi << 1 | self.shift_reg_palette_lo;
     }
 
     pub fn update_tile_data(&mut self) {
-        self.shift_reg_pt_lo >>= 1;
-        self.shift_reg_pt_hi >>= 1;
+        self.shift_reg_pt_lo <<= 1;
+        self.shift_reg_pt_hi <<= 1;
 
         self.shift_reg_palette_lo >>= 1;
         self.shift_reg_palette_hi >>= 1;
@@ -146,8 +146,7 @@ impl PPU {
         let row = self.scanline;
         let col = self.cycle - 1;
 
-        let pixel = (self.shift_reg_pt_lo & 1) + (self.shift_reg_pt_hi & 1) << 1;
-        let palette = (self.shift_reg_palette_lo & 1) + (self.shift_reg_palette_hi & 1) << 1;
+        let pixel = ((self.shift_reg_pt_hi >> 15) << 1) | (self.shift_reg_pt_lo >> 15);
 
         self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[pixel as usize % 64].r;
         self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[pixel as usize % 64].g;
@@ -168,10 +167,6 @@ impl PPU {
                 self.even_frame = !self.even_frame;
             }
         }
-
-        //println!("PPU: {:03}, {:03}", self.scanline, self.cycle);
-
-        //panic!();
 
         // Information of current scanline/cycle
         let enable_rendering = self.reg_ppu_mask & 0b00011000 != 0;

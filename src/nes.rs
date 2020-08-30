@@ -31,7 +31,7 @@ impl NES {
     pub fn draw(&mut self, canvas: &mut WindowCanvas) {
         for row in 0..240 {
             for col in 0..256 {
-                canvas.set_draw_color(Color::RGB(self.cpu.bus.ppu.display[row * 256 + col].r, self.cpu.bus.ppu.display[row * 256 + col].g, self.cpu.bus.ppu.display[row * 256 + col].b));
+                canvas.set_draw_color(Color::RGB(self.cpu.bus.ppu.display[(row * 256) + col].r, self.cpu.bus.ppu.display[(row * 256) + col].g, self.cpu.bus.ppu.display[(row * 256) + col].b));
                 canvas.fill_rect(Rect::new(col as i32 * 2, row as i32 * 2, 2, 2)).unwrap();
             }
         }
