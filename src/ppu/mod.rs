@@ -21,9 +21,6 @@ pub struct PPU {
     reg_ppu_status: u8,     // $2002
     reg_oam_addr: u8,       // $2003
     reg_oam_data: u8,       // $2004
-    reg_ppu_scroll: u8,     // $2005
-    reg_ppu_addr: u8,       // $2006
-    reg_ppu_data: u8,       // $2007
 
     x_scroll: u8,
 
@@ -35,6 +32,12 @@ pub struct PPU {
     fetched_at: u8,
     fetched_bg_lo: u8,
     fetched_bg_hi: u8,
+
+    shift_reg_pt_lo: u16,
+    shift_reg_pt_hi: u16,
+
+    shift_reg_palette_lo: u8,
+    shift_reg_palette_hi: u8,
 
     pub trigger_nmi: bool,
 
@@ -57,9 +60,6 @@ impl PPU {
             reg_ppu_status: 0b00000000,
             reg_oam_addr: 0b00000000,
             reg_oam_data: 0b00000000,
-            reg_ppu_scroll: 0b00000000,
-            reg_ppu_addr: 0b00000000,
-            reg_ppu_data: 0b00000000,
 
             x_scroll: 0,
 
@@ -71,6 +71,12 @@ impl PPU {
             fetched_at: 0,
             fetched_bg_lo: 0,
             fetched_bg_hi: 0,
+
+            shift_reg_pt_lo: 0,
+            shift_reg_pt_hi: 0,
+
+            shift_reg_palette_lo: 0,
+            shift_reg_palette_hi: 0,
 
             trigger_nmi: false,
 
@@ -90,9 +96,6 @@ impl PPU {
         self.reg_ppu_status = 0b00000000;
         self.reg_oam_addr = 0b00000000;
         self.reg_oam_data = 0b00000000;
-        self.reg_ppu_scroll = 0b00000000;
-        self.reg_ppu_addr = 0b00000000;
-        self.reg_ppu_data = 0b00000000; 
     }
 
     pub fn assign_cartridge(&mut self, cartridge: Rc<RefCell<Cartridge>>) {
@@ -100,34 +103,43 @@ impl PPU {
     }
 
     pub fn fetch_nt(&mut self) {
-        self.fetched_nt = self.get_memory(0x2000 | (self.vram_address & 0x0FFF));
+        let address = 0x2000 | (self.vram_address & 0x0FFF);
+        self.fetched_nt = self.get_memory(address);
     }
 
     pub fn fetch_at(&mut self) {
-        let address = 0x23C0 | (self.vram_address & 0x0C00) | ((self.vram_address >> 4) & 0x38) | ((self.vram_address >> 2) & 0x07);
-        let shift = ((self.vram_address >> 4) & 4) | (self.vram_address & 2);
-        self.fetched_at = ((self.get_memory(address) >> shift) & 3) << 2;
+        let address = 0x23C0 | (self.vram_address & 0x0C00) | ((self.vram_address >> 4) & 0x38) | ((self.vram_address >> 2) & 0x07) ;
+        self.fetched_at = self.get_memory(address);
     }
 
-    pub fn fetch_bg_lo(&mut self) {
+    pub fn fetch_tile_lo(&mut self) {
         let background_table = (self.reg_ppu_ctrl >> 4) & 0x01;
-        let address = (0x1000 * background_table as u16) + (self.fetched_nt as u16 * 16) + ((self.vram_address >> 12) & 7);
+        let address = (0x1000 * background_table as u16) + (self.fetched_nt as u16 * 16) + (self.vram_address >> 12) & 7;
         self.fetched_bg_lo = self.get_memory(address);
     }
 
-    pub fn fetch_bg_hi(&mut self) {
+    pub fn fetch_tile_hi(&mut self) {
         let background_table = (self.reg_ppu_ctrl >> 4) & 0x01;
-        let address = (0x1000 * background_table as u16) + (self.fetched_nt as u16 * 16) + ((self.vram_address >> 12) & 7);
+        let address = (0x1000 * background_table as u16) + (self.fetched_nt as u16 * 16) + (self.vram_address >> 12) & 7;
         self.fetched_bg_hi = self.get_memory(address + 8);
     }
 
+    pub fn store_tile_data(&mut self) {
+        self.shift_reg_pt_lo = (self.shift_reg_pt_lo & 0x00FF) | (self.fetched_bg_lo as u16) << 8;
+        self.shift_reg_pt_hi = (self.shift_reg_pt_hi & 0x00FF) | (self.fetched_bg_hi as u16) << 8;
+    }
+
+    pub fn update_tile_data(&mut self) {
+        self.shift_reg_pt_lo >>= 1;
+        self.shift_reg_pt_hi >>= 1;
+    }
+
     pub fn render_pixel(&mut self) {
-        //println!("Pixel should be rendered");
         let row = self.scanline;
         let col = self.cycle - 1;
-        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[self.fetched_nt as usize % 64].r;
-        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[self.fetched_nt as usize % 64].g;
-        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[self.fetched_nt as usize % 64].b;
+        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[self.shift_reg_pt_hi as usize % 64].r;
+        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[self.shift_reg_pt_hi as usize % 64].g;
+        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[self.shift_reg_pt_hi as usize % 64].b;
     }
 
     pub fn tick(&mut self) {
@@ -156,11 +168,13 @@ impl PPU {
 
             // Handling VRAM fetches (beige blocks on NTSC timing diagram)
             if (visible_scanline || prerender_scanline) && (visible_cycle || fetch_cycle) {
+                self.update_tile_data();
                 match self.cycle % 8 {
                     1 => self.fetch_nt(),
                     3 => self.fetch_at(),
-                    5 => self.fetch_bg_lo(),
-                    7 => self.fetch_bg_hi(),
+                    5 => self.fetch_tile_lo(),
+                    7 => self.fetch_tile_hi(),
+                    0 => self.store_tile_data(),
                     _ => {}
                 }
             }
@@ -209,7 +223,7 @@ impl PPU {
 
     pub fn x_increment(&mut self) {
         if self.vram_address & 0x001F == 31 {
-            self.vram_address &= !0x001F;
+            self.vram_address &= 0xFFE0;
             self.vram_address ^= 0x0400;
         }
         else {
@@ -222,7 +236,7 @@ impl PPU {
             self.vram_address += 0x1000;
         }
         else {
-            self.vram_address &= !0x7000;
+            self.vram_address &= 0x8FFF;
             let mut y = (self.vram_address & 0x03E0) >> 5;
             if y == 29 {
                 y = 0;
@@ -234,7 +248,7 @@ impl PPU {
             else {
                 y += 1;
             }
-            self.vram_address = (self.vram_address & !0x03E0) | (y << 5);
+            self.vram_address = (self.vram_address & 0xFC1F) | (y << 5);
         }
     }
 
@@ -257,7 +271,7 @@ impl PPU {
     }
 
     pub fn write_reg(&mut self, address: u16, contents: u8) -> u8 {
-        self.reg_ppu_status = self.reg_ppu_status & 0b11100000;
+        self.reg_ppu_status &= 0b11100000;
         let new_val = contents & 0x1F;
         self.reg_ppu_status = self.reg_ppu_status | new_val;
 

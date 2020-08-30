@@ -61,8 +61,7 @@ impl PPU {
             self.temp_address |= contents as u16 & 0xF8 << 2;
             self.writing = false;
         }
-
-        self.reg_ppu_scroll
+        contents
     }
 
     pub fn write_ppu_addr(&mut self, contents: u8) -> u8 {
@@ -76,9 +75,7 @@ impl PPU {
             self.vram_address = self.temp_address;
             self.writing = false;
         }
-
-        self.reg_ppu_addr = contents;
-        self.reg_ppu_addr
+        contents
     }
 
     pub fn write_ppu_data(&mut self, contents: u8) -> u8 {
@@ -89,6 +86,6 @@ impl PPU {
         else {
             self.vram_address += 1;
         }
-        self.reg_ppu_data
+        contents
     }
 }
