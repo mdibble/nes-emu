@@ -8,12 +8,15 @@ use self::nrom_0::NROM;
 use self::rom_data::RomData;
 
 pub struct Cartridge {
-    mapper: Box<dyn Mapper>
+    mapper: Box<dyn Mapper>,
+    pub mirroring: u8
 }
 
 impl Cartridge {
     pub fn new(dump: Vec<u8>) -> Cartridge {
         let rom_data = RomData::new(dump);
+
+        let mirror_mode = rom_data.header.mirror_mode;
 
         let mapper: Box<dyn Mapper> = match rom_data.header.mapper_id {
             0 => Box::new(NROM::new(rom_data)),
@@ -21,7 +24,8 @@ impl Cartridge {
         };
     
         let cartridge = Cartridge {
-            mapper: mapper
+            mapper: mapper,
+            mirroring: mirror_mode
         };
         cartridge
     }
