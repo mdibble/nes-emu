@@ -216,7 +216,6 @@ impl PPU {
                     self.x_copy();
                 }
             }
-
             if prerender_scanline && self.cycle >= 280 && self.cycle <= 304 {
                 // vert(v) = vert(t)
                 self.y_copy();
@@ -244,7 +243,7 @@ impl PPU {
 
     pub fn x_increment(&mut self) {
         if self.vram_address & 0x001F == 31 {
-            self.vram_address &= 0xFFE0;
+            self.vram_address &= !0x001F;
             self.vram_address ^= 0x0400;
         }
         else {
@@ -257,7 +256,7 @@ impl PPU {
             self.vram_address += 0x1000;
         }
         else {
-            self.vram_address &= 0x8FFF;
+            self.vram_address &= !0x7000;
             let mut y = (self.vram_address & 0x03E0) >> 5;
             if y == 29 {
                 y = 0;
@@ -269,16 +268,18 @@ impl PPU {
             else {
                 y += 1;
             }
-            self.vram_address = (self.vram_address & 0xFC1F) | (y << 5);
+            self.vram_address = (self.vram_address & !0x03E0) | (y << 5);
         }
     }
 
     pub fn x_copy(&mut self) {
-        self.vram_address = (self.vram_address & 0xFBE0) | (self.temp_address & 0x041F);
+        self.vram_address &= 0b0111101111100000;
+        self.vram_address |= self.temp_address & 0b0000010000011111;
     }
 
     pub fn y_copy(&mut self) {
-        self.vram_address = (self.vram_address & 0x841F) | (self.temp_address & 0x7BE0);
+        self.vram_address &= 0b0000010000011111;
+        self.vram_address |= self.temp_address & 0b0111101111100000;
     }
 
     pub fn get_reg(&mut self, address: u16) -> u8 {
