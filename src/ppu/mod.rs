@@ -152,9 +152,12 @@ impl PPU {
 
         let pixel = ((self.shift_reg_pt_hi >> 15) << 1) | (self.shift_reg_pt_lo >> 15);
 
-        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[1 + pixel as usize % 64].r;
-        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[1 + pixel as usize % 64].g;
-        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[1 + pixel as usize % 64].b;
+        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[pixel as usize % 64].r;
+        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[pixel as usize % 64].g;
+        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[pixel as usize % 64].b;
+
+        // I know that the nametables are being rendered correctly, I just need to figure out why they
+        // aren't being displayed in the right way by the renderer
     }
 
     pub fn tick(&mut self) {
@@ -322,16 +325,16 @@ impl PPU {
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
                 match mirror_mode {
-                    0 => {
+                    0 => { // Horizontal
                         match address {
                             0x2000..=0x23FF => self.nametables[(address as usize - 0x2000)],
-                            0x2400..=0x27FF => self.nametables[(address as usize - 0x2000)],
+                            0x2400..=0x27FF => self.nametables[(address as usize - 0x2400)],
                             0x2800..=0x2BFF => self.nametables[(address as usize - 0x2800)],
-                            0x2C00..=0x2FFF => self.nametables[(address as usize - 0x2800)],
+                            0x2C00..=0x2FFF => self.nametables[(address as usize - 0x2C00)],
                             0x3000..=0x33FF => self.nametables[(address as usize - 0x3000)],
-                            0x3400..=0x37FF => self.nametables[(address as usize - 0x3000)],
+                            0x3400..=0x37FF => self.nametables[(address as usize - 0x3400)],
                             0x3800..=0x3BFF => self.nametables[(address as usize - 0x3800)],
-                            0x3C00..=0x3EFF => self.nametables[(address as usize - 0x3800)],
+                            0x3C00..=0x3EFF => self.nametables[(address as usize - 0x3C00)],
                             _ => panic!("Impossible address")
                         }
                     },
@@ -359,13 +362,13 @@ impl PPU {
                     0 => {
                         match address {
                             0x2000..=0x23FF => { self.nametables[(address as usize - 0x2000)] = contents; contents },
-                            0x2400..=0x27FF => { self.nametables[(address as usize - 0x2000)] = contents; contents },
+                            0x2400..=0x27FF => { self.nametables[(address as usize - 0x2400)] = contents; contents },
                             0x2800..=0x2BFF => { self.nametables[(address as usize - 0x2800)] = contents; contents },
-                            0x2C00..=0x2FFF => { self.nametables[(address as usize - 0x2800)] = contents; contents },
+                            0x2C00..=0x2FFF => { self.nametables[(address as usize - 0x2C00)] = contents; contents },
                             0x3000..=0x33FF => { self.nametables[(address as usize - 0x3000)] = contents; contents },
-                            0x3400..=0x37FF => { self.nametables[(address as usize - 0x3000)] = contents; contents },
+                            0x3400..=0x37FF => { self.nametables[(address as usize - 0x3400)] = contents; contents },
                             0x3800..=0x3BFF => { self.nametables[(address as usize - 0x3800)] = contents; contents },
-                            0x3C00..=0x3EFF => { self.nametables[(address as usize - 0x3800)] = contents; contents },
+                            0x3C00..=0x3EFF => { self.nametables[(address as usize - 0x3C00)] = contents; contents },
                             _ => contents
                         }
                     }
