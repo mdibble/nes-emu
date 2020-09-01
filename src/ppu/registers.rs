@@ -28,8 +28,7 @@ impl PPU {
 
     pub fn write_ppu_ctrl(&mut self, contents: u8) -> u8 {
         self.reg_ppu_ctrl = contents;
-        self.temp_address &= 0xF3FF;
-        self.temp_address |= (contents as u16 & 0x3) << 10;
+        self.temp_address = (self.temp_address & 0xF3FF) | ((contents as u16 & 0x03) << 10);
         self.reg_ppu_ctrl
     }
 

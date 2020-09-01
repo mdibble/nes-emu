@@ -222,7 +222,7 @@ impl PPU {
             if prerender_scanline && self.cycle >= 280 && self.cycle <= 304 {
                 // vert(v) = vert(t)
                 self.y_copy();
-            }
+            }   
         }
 
         // End of drawing
@@ -281,6 +281,8 @@ impl PPU {
     }
 
     pub fn y_copy(&mut self) {
+        // THIS IS CAUSING THE ISSUE
+        // CHECK OVER ALL OF THE REGISTER METHODS THAT INVOLVE THE PPU TEMP ADDRESS
         self.vram_address &= 0b0000010000011111;
         self.vram_address |= self.temp_address & 0b0111101111100000;
     }
