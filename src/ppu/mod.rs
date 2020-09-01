@@ -43,6 +43,7 @@ pub struct PPU {
 
     cartridge: Option<Rc<RefCell<Cartridge>>>,
 
+    vblank: bool,
     even_frame: bool,
     pub display: Vec<RGB>,
     pub draw: bool
@@ -83,6 +84,7 @@ impl PPU {
 
             cartridge: None,
 
+            vblank: true,
             even_frame: true,
             display: vec![RGB{ r: 0, g: 0, b: 0 }; 256 * 240],
             draw: false
@@ -207,8 +209,13 @@ impl PPU {
             }
 
             // Handling register changes (red blocks on NTSC timing diagram)
-            if (visible_scanline || prerender_scanline) && (visible_cycle || fetch_cycle || self.cycle == 257) {
-                if self.cycle % 8 == 0 && self.cycle != 256 {
+            if prerender_scanline && self.cycle >= 280 && self.cycle <= 304 {
+                // vert(v) = vert(t)
+                self.y_copy();
+            }  
+
+            if visible_scanline || prerender_scanline {
+                if self.cycle % 8 == 0 && (visible_cycle || fetch_cycle) {
                     self.x_increment();
                 }
                 if self.cycle == 256 {
@@ -219,10 +226,7 @@ impl PPU {
                     self.x_copy();
                 }
             }
-            if prerender_scanline && self.cycle >= 280 && self.cycle <= 304 {
-                // vert(v) = vert(t)
-                self.y_copy();
-            }   
+             
         }
 
         // End of drawing
@@ -230,14 +234,16 @@ impl PPU {
         // VBlank
         if self.scanline == 241 && self.cycle == 1 {
             self.draw = true; // ready to draw to canvas
+            self.vblank = true;
             self.reg_ppu_status |= 0b10000000;
             if self.reg_ppu_ctrl & 0b10000000 == 0b10000000 {
                 self.trigger_nmi = true;
             }
         }
 
-        //VBlank off
+        // VBlank off
         if self.scanline == 261 && self.cycle == 1 {
+            self.vblank = false;
             self.reg_ppu_status &= 0b01111111;  
             self.reg_ppu_status &= 0b10111111;  // sprite 0 hit
             self.reg_ppu_status &= 0b11011111;  // sprite overflow
@@ -276,15 +282,13 @@ impl PPU {
     }
 
     pub fn x_copy(&mut self) {
-        self.vram_address &= 0b0111101111100000;
-        self.vram_address |= self.temp_address & 0b0000010000011111;
+        self.vram_address &= !0x041F;
+        self.vram_address |= self.temp_address & 0x041F;
     }
 
     pub fn y_copy(&mut self) {
-        // THIS IS CAUSING THE ISSUE
-        // CHECK OVER ALL OF THE REGISTER METHODS THAT INVOLVE THE PPU TEMP ADDRESS
-        self.vram_address &= 0b0000010000011111;
-        self.vram_address |= self.temp_address & 0b0111101111100000;
+        self.vram_address &= !0x7BE0;
+        self.vram_address |= self.temp_address & !0x7BE0;
     }
 
     pub fn get_reg(&mut self, address: u16) -> u8 {
@@ -299,8 +303,7 @@ impl PPU {
 
     pub fn write_reg(&mut self, address: u16, contents: u8) -> u8 {
         self.reg_ppu_status &= 0b11100000;
-        let new_val = contents & 0x1F;
-        self.reg_ppu_status = self.reg_ppu_status | new_val;
+        self.reg_ppu_status = self.reg_ppu_status | (contents & 0b00011111);
 
         let result = match address {
             0x2000 => self.write_ppu_ctrl(contents),

@@ -27,6 +27,12 @@ impl PPU {
     }
 
     pub fn write_ppu_ctrl(&mut self, contents: u8) -> u8 {
+        if self.vblank && self.reg_ppu_status & 0b10000000 == 0b10000000 {
+            if (self.reg_ppu_ctrl & 0b10000000) == 0b00000000 && (contents & 0b10000000) == 0b10000000 {
+                self.trigger_nmi = true;
+            }   
+        }
+
         self.reg_ppu_ctrl = contents;
         self.temp_address = (self.temp_address & 0xF3FF) | ((contents as u16 & 0x03) << 10);
         self.reg_ppu_ctrl

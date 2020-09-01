@@ -110,7 +110,6 @@ impl NES {
                 canvas.fill_rect(Rect::new(col as i32 * 2, row as i32 * 2, 2, 2)).unwrap();
             }
         }
-
         canvas.present();
         self.cpu.bus.ppu.draw = false;
     }
