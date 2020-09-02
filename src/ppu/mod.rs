@@ -344,22 +344,8 @@ impl PPU {
                     Some(ref cart) => cart.borrow().mirroring,
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
-                match mirror_mode {
-                    0 => { // Horizontal
-                        match address {
-                            0x2000..=0x23FF => self.nametables[(address as usize - 0x2000)],
-                            0x2400..=0x27FF => self.nametables[(address as usize - 0x2400)],
-                            0x2800..=0x2BFF => self.nametables[(address as usize - 0x2800)],
-                            0x2C00..=0x2FFF => self.nametables[(address as usize - 0x2C00)],
-                            0x3000..=0x33FF => self.nametables[(address as usize - 0x3000)],
-                            0x3400..=0x37FF => self.nametables[(address as usize - 0x3400)],
-                            0x3800..=0x3BFF => self.nametables[(address as usize - 0x3800)],
-                            0x3C00..=0x3EFF => self.nametables[(address as usize - 0x3C00)],
-                            _ => panic!("Impossible address")
-                        }
-                    },
-                    _ => panic!("Haven't dealt with mirroring")
-                }
+
+                self.nametables[(address as usize - 0x2000) % 0x800]
             },
             0x3F00..=0x3FFF => self.palettes[address as usize - 0x3F00],
             _ => panic!("PPU requested read outside of memory range: ${:x}", address)
@@ -378,22 +364,9 @@ impl PPU {
                     Some(ref cart) => cart.borrow().mirroring,
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
-                match mirror_mode {
-                    0 => {
-                        match address {
-                            0x2000..=0x23FF => { self.nametables[(address as usize - 0x2000)] = contents; contents },
-                            0x2400..=0x27FF => { self.nametables[(address as usize - 0x2400)] = contents; contents },
-                            0x2800..=0x2BFF => { self.nametables[(address as usize - 0x2800)] = contents; contents },
-                            0x2C00..=0x2FFF => { self.nametables[(address as usize - 0x2C00)] = contents; contents },
-                            0x3000..=0x33FF => { self.nametables[(address as usize - 0x3000)] = contents; contents },
-                            0x3400..=0x37FF => { self.nametables[(address as usize - 0x3400)] = contents; contents },
-                            0x3800..=0x3BFF => { self.nametables[(address as usize - 0x3800)] = contents; contents },
-                            0x3C00..=0x3EFF => { self.nametables[(address as usize - 0x3C00)] = contents; contents },
-                            _ => contents
-                        }
-                    }
-                    _ => panic!("Haven't dealt with mirroring")
-                }
+
+                self.nametables[(address as usize - 0x2000) % 0x800] = contents;
+                contents
             },
             0x3F00..=0x3FFF => { self.palettes[(address % 32) as usize] = contents; contents },
             _ => panic!("PPU requested write outside of memory range: ${:x}", address)

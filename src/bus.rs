@@ -36,7 +36,7 @@ impl Bus {
             }
             0x2000..=0x3FFF => {
                 // PPU registers
-                result = self.ppu.get_reg(address);
+                result = self.ppu.get_reg(0x2000 + (address % 8));
             }
             0x4000..=0x4017 => {
                 // Input and APU
@@ -60,7 +60,7 @@ impl Bus {
             }
             0x2000..=0x3FFF => {
                 // PPU registers
-                self.ppu.write_reg(address, contents);
+                self.ppu.write_reg(0x2000 + (address % 8), contents);
             }
             0x4000..=0x4017 => {
                 if address == 0x4014 {

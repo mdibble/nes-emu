@@ -39,8 +39,6 @@ impl CPU {
         if self.cycles == 0 {
             if self.bus.ppu.trigger_nmi {
                 // CPU must wait until the end of the current instruction to issue an NMI
-                self.bus.ppu.nmi_occurred = false;
-                self.bus.ppu.nmi_output = false;
                 self.bus.ppu.trigger_nmi = false;
                 self.nmi();
             }

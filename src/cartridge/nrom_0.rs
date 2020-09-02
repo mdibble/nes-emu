@@ -31,7 +31,7 @@ impl Mapper for NROM {
                 let end = self.data.prg_rom.len();
                 self.data.prg_rom[end - 0x4000 + (address as usize - 0xC000)] = contents;
             }, 
-            _ => panic!("Invalid read!")
+            _ => panic!("Invalid write!")
         };
         contents
     }

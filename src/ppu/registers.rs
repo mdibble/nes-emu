@@ -11,7 +11,6 @@ impl PPU {
         else {
             self.reg_ppu_status &= 0b01111111;
         }
-
         self.nmi_occurred = false;
         self.update_nmi_status();
         val
