@@ -38,11 +38,12 @@ pub struct PPU {
     shift_reg_palette_hi: u8,
     palette_latch: u8,
 
-    pub trigger_nmi: bool,
-
     cartridge: Option<Rc<RefCell<Cartridge>>>,
 
-    vblank: bool,
+    pub nmi_occurred: bool,
+    pub nmi_output: bool,
+    pub trigger_nmi: bool,
+
     even_frame: bool,
     pub display: Vec<u8>,
     pub draw: bool
@@ -80,11 +81,12 @@ impl PPU {
             shift_reg_palette_hi: 0,
             palette_latch: 0,
 
-            trigger_nmi: false,
-
             cartridge: None,
 
-            vblank: true,
+            nmi_occurred: false,
+            nmi_output: false,
+            trigger_nmi: false,
+
             even_frame: true,
             display: vec![0x00; 256 * 240 * 3],
             draw: false
@@ -97,9 +99,7 @@ impl PPU {
         self.scanline = 0;
         self.reg_ppu_ctrl = 0b00000000;
         self.reg_ppu_mask = 0b00000000;
-        self.reg_ppu_status = 0b00000000;
         self.reg_oam_addr = 0b00000000;
-        self.reg_oam_data = 0b00000000;
     }
 
     pub fn assign_cartridge(&mut self, cartridge: Rc<RefCell<Cartridge>>) {
@@ -245,19 +245,22 @@ impl PPU {
         // VBlank
         if self.scanline == 241 && self.cycle == 1 {
             self.draw = true; // ready to draw to canvas
-            self.vblank = true;
+            self.nmi_occurred = true;
+            self.update_nmi_status();
             self.reg_ppu_status |= 0b10000000;
-            if self.reg_ppu_ctrl & 0b10000000 == 0b10000000 {
-                self.trigger_nmi = true;
-            }
         }
 
         // VBlank off
         if self.scanline == 261 && self.cycle == 1 {
-            self.vblank = false;
-            self.reg_ppu_status &= 0b01111111;  
-            self.reg_ppu_status &= 0b10111111;  // sprite 0 hit
-            self.reg_ppu_status &= 0b11011111;  // sprite overflow
+            self.nmi_occurred = false;
+            self.update_nmi_status();
+            self.reg_ppu_status &= 0b00011111;
+        }
+    }
+
+    pub fn update_nmi_status(&mut self) {
+        if self.nmi_output && self.nmi_occurred {
+            self.trigger_nmi = true;
         }
     }
 
@@ -314,7 +317,7 @@ impl PPU {
 
     pub fn write_reg(&mut self, address: u16, contents: u8) -> u8 {
         self.reg_ppu_status &= 0b11100000;
-        self.reg_ppu_status = self.reg_ppu_status | (contents & 0b00011111);
+        self.reg_ppu_status |= contents & 0b00011111;
 
         let result = match address {
             0x2000 => self.write_ppu_ctrl(contents),
@@ -324,6 +327,7 @@ impl PPU {
             0x2005 => self.write_ppu_scroll(contents),
             0x2006 => self.write_ppu_addr(contents),
             0x2007 => self.write_ppu_data(contents),
+            0x4014 => self.write_oam_dma(contents),
             _ => panic!("No register at this location! ${:x}", address)
         };
         result

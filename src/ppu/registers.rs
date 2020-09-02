@@ -4,7 +4,16 @@ impl PPU {
     pub fn read_ppu_status(&mut self) -> u8 {
         let val = self.reg_ppu_status;
         self.writing = false;
-        self.reg_ppu_status &= 0b01111111; // clear vertical blank
+
+        if self.nmi_occurred {
+            self.reg_ppu_status |= 0b10000000;
+        }
+        else {
+            self.reg_ppu_status &= 0b01111111;
+        }
+
+        self.nmi_occurred = false;
+        self.update_nmi_status();
         val
     }
 
@@ -27,13 +36,9 @@ impl PPU {
     }
 
     pub fn write_ppu_ctrl(&mut self, contents: u8) -> u8 {
-        if self.vblank && self.reg_ppu_status & 0b10000000 == 0b10000000 {
-            if (self.reg_ppu_ctrl & 0b10000000) == 0b00000000 && (contents & 0b10000000) == 0b10000000 {
-                self.trigger_nmi = true;
-            }   
-        }
-
         self.reg_ppu_ctrl = contents;
+        self.nmi_output = (contents >> 7) & 1 == 1;
+        self.update_nmi_status();
         self.temp_address = (self.temp_address & 0xF3FF) | ((contents as u16 & 0x03) << 10);
         self.reg_ppu_ctrl
     }
@@ -93,6 +98,11 @@ impl PPU {
         else {
             self.vram_address += 1;
         }
+        contents
+    }
+
+    pub fn write_oam_dma(&mut self, contents: u8) -> u8 {
+        //println!("Wrote to $4014");
         contents
     }
 }
