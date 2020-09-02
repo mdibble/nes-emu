@@ -38,6 +38,7 @@ pub struct PPU {
 
     shift_reg_palette_lo: u8,
     shift_reg_palette_hi: u8,
+    palette_latch: u8,
 
     pub trigger_nmi: bool,
 
@@ -79,6 +80,7 @@ impl PPU {
 
             shift_reg_palette_lo: 0,
             shift_reg_palette_hi: 0,
+            palette_latch: 0,
 
             trigger_nmi: false,
 
@@ -117,49 +119,61 @@ impl PPU {
     }
 
     pub fn fetch_tile_lo(&mut self) {
-        let background_table = (self.reg_ppu_ctrl >> 4) & 0x01; // this works
-        let mut address = 0x1000 * background_table as u16;     // this works
+        let background_table = (self.reg_ppu_ctrl >> 4) & 0x01;
+        let mut address = 0x1000 * background_table as u16;
         address += self.fetched_nt as u16 * 16;
-        address += (self.vram_address >> 12) & 7;               // scrolling
+        address += (self.vram_address >> 12) & 7;
         self.fetched_bg_lo = self.get_memory(address);
     }
 
     pub fn fetch_tile_hi(&mut self) {
-        let background_table = (self.reg_ppu_ctrl >> 4) & 0x01; // this works
-        let mut address = 0x1000 * background_table as u16;     // this works
+        let background_table = (self.reg_ppu_ctrl >> 4) & 0x01;
+        let mut address = 0x1000 * background_table as u16;
         address += self.fetched_nt as u16 * 16;
-        address += (self.vram_address >> 12) & 7;               // scrolling
+        address += (self.vram_address >> 12) & 7;
         self.fetched_bg_hi = self.get_memory(address + 8);
     }
 
     pub fn store_tile_data(&mut self) {
         self.shift_reg_pt_lo = (self.shift_reg_pt_lo & 0xFF00) | (self.fetched_bg_lo as u16);
         self.shift_reg_pt_hi = (self.shift_reg_pt_hi & 0xFF00) | (self.fetched_bg_hi as u16);
-
-        self.shift_reg_palette_lo = self.shift_reg_palette_lo << 1 | self.shift_reg_palette_lo;
-        self.shift_reg_palette_hi = self.shift_reg_palette_hi << 1 | self.shift_reg_palette_lo;
+        self.palette_latch = self.fetched_at;
     }
 
     pub fn update_tile_data(&mut self) {
         self.shift_reg_pt_lo <<= 1;
         self.shift_reg_pt_hi <<= 1;
 
-        self.shift_reg_palette_lo >>= 1;
-        self.shift_reg_palette_hi >>= 1;
+        self.shift_reg_palette_lo <<= 1;
+        self.shift_reg_palette_hi <<= 1;
+
+        let latch_bit0 = self.palette_latch & 0b01;
+        let latch_bit1 = (self.palette_latch & 0b10) >> 1;
+        self.shift_reg_palette_lo |= latch_bit0;
+        self.shift_reg_palette_hi |= latch_bit1;
     }
 
     pub fn render_pixel(&mut self) {
         let row = self.scanline;
         let col = self.cycle - 1;
 
-        let pixel = ((self.shift_reg_pt_hi >> 15) << 1) | (self.shift_reg_pt_lo >> 15);
+        let pixel = (self.shift_reg_pt_hi >> 15) << 1 | self.shift_reg_pt_lo >> 15;
+        let palette = (self.shift_reg_palette_hi >> 7) << 1 | self.shift_reg_palette_lo >> 7;
 
-        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[pixel as usize % 64].r;
-        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[pixel as usize % 64].g;
-        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[pixel as usize % 64].b;
+        let new_palette = self.get_memory(self.get_palette_address(palette, pixel));
 
-        // I know that the nametables are being rendered correctly, I just need to figure out why they
-        // aren't being displayed in the right way by the renderer
+        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[new_palette as usize].r;
+        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[new_palette as usize].g;
+        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[new_palette as usize].b;
+    }
+
+    pub fn get_palette_address(&self, palette: u8, pixel: u16) -> u16 {
+        if pixel == 0 {
+            0x3F00
+        }
+        else {
+            0x3F00 + (palette as u16 * 4) + pixel
+        }
     }
 
     pub fn tick(&mut self) {
@@ -282,13 +296,13 @@ impl PPU {
     }
 
     pub fn x_copy(&mut self) {
-        self.vram_address &= !0x041F;
-        self.vram_address |= self.temp_address & 0x041F;
+        self.vram_address &= !0b0000010000011111;
+        self.vram_address |= self.temp_address & 0b0000010000011111;
     }
 
     pub fn y_copy(&mut self) {
-        self.vram_address &= !0x7BE0;
-        self.vram_address |= self.temp_address & !0x7BE0;
+        self.vram_address &= !0b0111101111100000;
+        self.vram_address |= self.temp_address & !0b0111101111100000;
     }
 
     pub fn get_reg(&mut self, address: u16) -> u8 {
