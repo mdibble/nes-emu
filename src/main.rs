@@ -32,16 +32,25 @@ fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
-    let window = video_subsystem.window("NES Emulator", 256 * 4, 240 * 2).position_centered().build().unwrap();
+    let window = video_subsystem.window("NES Emulator", 256 * 2, 240 * 2).position_centered().build().unwrap();
     
     let mut canvas = window.into_canvas().build().unwrap();
     canvas.clear();
     canvas.present();
 
+    let texture_creator = canvas.texture_creator();
+    let mut texture = texture_creator.create_texture_streaming(sdl2::pixels::PixelFormatEnum::RGB24, 256, 240).unwrap();
+    let mut event_pump = sdl_context.event_pump().unwrap();
+
     loop {
         nes.cycle();
         if nes.cpu.bus.ppu.draw {
-            nes.draw(&mut canvas);
+            nes.draw(&mut canvas, &mut texture);
+            for event in event_pump.poll_iter() {
+                match event {
+                    _ => {}
+                }
+            }
         }
     }
 }

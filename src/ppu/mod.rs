@@ -1,8 +1,6 @@
 mod registers;
 mod colors;
 
-use colors::RGB;
-
 use colors::SYS_COLORS;
 
 use crate::cartridge::Cartridge;
@@ -46,7 +44,7 @@ pub struct PPU {
 
     vblank: bool,
     even_frame: bool,
-    pub display: Vec<RGB>,
+    pub display: Vec<u8>,
     pub draw: bool
 }
 
@@ -88,7 +86,7 @@ impl PPU {
 
             vblank: true,
             even_frame: true,
-            display: vec![RGB{ r: 0, g: 0, b: 0 }; 256 * 240],
+            display: vec![0x00; 256 * 240 * 3],
             draw: false
         };
         ppu
@@ -162,9 +160,9 @@ impl PPU {
 
         let new_palette = self.get_memory(self.get_palette_address(palette, pixel));
 
-        self.display[(row as usize * 256) + col as usize].r = SYS_COLORS[new_palette as usize].r;
-        self.display[(row as usize * 256) + col as usize].g = SYS_COLORS[new_palette as usize].g;
-        self.display[(row as usize * 256) + col as usize].b = SYS_COLORS[new_palette as usize].b;
+        self.display[(row as usize * 256 * 3) + (col * 3) as usize + 0] = SYS_COLORS[new_palette as usize].r;
+        self.display[(row as usize * 256 * 3) + (col * 3) as usize + 1] = SYS_COLORS[new_palette as usize].g;
+        self.display[(row as usize * 256 * 3) + (col * 3) as usize + 2] = SYS_COLORS[new_palette as usize].b;
     }
 
     pub fn get_palette_address(&self, palette: u8, pixel: u16) -> u16 {
@@ -240,7 +238,6 @@ impl PPU {
                     self.x_copy();
                 }
             }
-             
         }
 
         // End of drawing
@@ -394,7 +391,7 @@ impl PPU {
                     _ => panic!("Haven't dealt with mirroring")
                 }
             },
-            0x3F00..=0x3FFF => { self.palettes[address as usize - 0x3F00] = contents; contents },
+            0x3F00..=0x3FFF => { self.palettes[(address % 32) as usize] = contents; contents },
             _ => panic!("PPU requested write outside of memory range: ${:x}", address)
         };
         result
