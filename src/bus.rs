@@ -1,5 +1,6 @@
 use crate::cartridge::Cartridge;
 use crate::ppu::PPU;
+use crate::joypad::Joypad;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -8,7 +9,8 @@ pub struct Bus {
     memory: [u8; 0x800],
     pub ppu: PPU,
     // apu: APU
-    pub cartridge: Rc<RefCell<Cartridge>>
+    pub cartridge: Rc<RefCell<Cartridge>>,
+    pub joypad: Joypad
 }
 
 impl Bus {
@@ -16,7 +18,8 @@ impl Bus {
         let bus = Bus {
             memory: [0; 0x800],
             ppu: PPU::new(),
-            cartridge: Rc::new(RefCell::new(Cartridge::new(cart_data)))
+            cartridge: Rc::new(RefCell::new(Cartridge::new(cart_data))),
+            joypad: Joypad::new()
         };
         bus
     }
@@ -39,6 +42,10 @@ impl Bus {
                 result = self.ppu.get_reg(0x2000 + (address % 8));
             }
             0x4000..=0x4017 => {
+                if address == 0x4016 || address == 0x4017 {
+                    result = if self.joypad.read_state() & 0x80 > 0 { 1 } else { 0 } ;
+                    self.joypad.shift();
+                }
                 // Input and APU
             }
             0x4018..=0x401F => {
@@ -65,6 +72,9 @@ impl Bus {
             0x4000..=0x4017 => {
                 if address == 0x4014 {
                     self.ppu.write_reg(address, contents);
+                }
+                if address == 0x4016 || address == 0x4017 {
+                    self.joypad.set_state();
                 }
             }
             0x4018..=0x401F => {

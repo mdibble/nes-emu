@@ -7,18 +7,22 @@
 
 extern crate sdl2;
 
+use sdl2::keyboard::Keycode;
+use sdl2::event::Event;
+
 mod cartridge;
 mod nes;
 mod cpu;
 mod bus;
 mod ppu;
+mod joypad;
 
 use nes::NES;
 
 use std::fs;
 
 fn main() {
-    let cart_data = fs::read("roms/donkey_kong.nes");
+    let cart_data = fs::read("roms/nestest.nes");
 
     let cart_data = match cart_data {
         Ok(g) => g,
@@ -46,11 +50,29 @@ fn main() {
         nes.cycle();
         if nes.cpu.bus.ppu.draw {
             nes.draw(&mut canvas, &mut texture);
+            let mut inputs = nes.cpu.bus.joypad.read();
             for event in event_pump.poll_iter() {
                 match event {
+                    Event::KeyDown { keycode: Some(Keycode::X), .. } => inputs |= 0x80,
+                    Event::KeyDown { keycode: Some(Keycode::Z), .. } => inputs |= 0x40,
+                    Event::KeyDown { keycode: Some(Keycode::A), .. } => inputs |= 0x20,
+                    Event::KeyDown { keycode: Some(Keycode::S), .. } => inputs |= 0x10,
+                    Event::KeyDown { keycode: Some(Keycode::Up), .. } => inputs |= 0x08,
+                    Event::KeyDown { keycode: Some(Keycode::Down), .. } => inputs |= 0x04,
+                    Event::KeyDown { keycode: Some(Keycode::Left), .. } => inputs |= 0x02,
+                    Event::KeyDown { keycode: Some(Keycode::Right), .. } => inputs |= 0x01,
+                    Event::KeyUp { keycode: Some(Keycode::X), .. } => inputs &= !0x80,
+                    Event::KeyUp { keycode: Some(Keycode::Z), .. } => inputs &= !0x40,
+                    Event::KeyUp { keycode: Some(Keycode::A), .. } => inputs &= !0x20,
+                    Event::KeyUp { keycode: Some(Keycode::S), .. } => inputs &= !0x10,
+                    Event::KeyUp { keycode: Some(Keycode::Up), .. } => inputs &= !0x08,
+                    Event::KeyUp { keycode: Some(Keycode::Down), .. } => inputs &= !0x04,
+                    Event::KeyUp { keycode: Some(Keycode::Left), .. } => inputs &= !0x02,
+                    Event::KeyUp { keycode: Some(Keycode::Right), .. } => inputs &= !0x01,
                     _ => {}
                 }
             }
+            nes.cpu.bus.joypad.write(inputs)
         }
     }
 }

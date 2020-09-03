@@ -44,8 +44,10 @@ impl CPU {
             }
             else {
                 let opcode = self.bus.get_memory(self.pc);
-                // print!("${:04x}:\t0x{:02x}\t({:02x} {:02x})\t\t", self.pc, opcode, self.bus.get_memory(self.pc + 1), self.bus.get_memory(self.pc + 2));
-                // print!("A:{:02x}\tX:{:02x}\tY:{:02x}\tP:{:02x}\tSP:{:02x}\tPPU:{}, {}\tCYC:{}\n", self.a, self.x, self.y, self.p, self.sp, self.bus.ppu.cycle, self.bus.ppu.scanline, self.total_cycles);
+                // if self.total_cycles >= 10370000 {
+                //     print!("${:04x}:\t0x{:02x}\t({:02x} {:02x})\t\t", self.pc, opcode, self.bus.get_memory(self.pc + 1), self.bus.get_memory(self.pc + 2));
+                //     print!("A:{:02x}\tX:{:02x}\tY:{:02x}\tP:{:02x}\tSP:{:02x}\tPPU:{}, {}\tCYC:{}\n", self.a, self.x, self.y, self.p, self.sp, self.bus.ppu.cycle, self.bus.ppu.scanline, self.total_cycles);
+                // }
                 self.pc_increase();
                 self.cycles = self.execute(opcode) + CYCLE_TABLE[opcode as usize] as u8;
                 self.cycles -= 1;
@@ -109,7 +111,7 @@ impl CPU {
 
         self.pc = (hi << 8) | lo;
 
-        self.cycles = 8; 
+        self.cycles = 7; 
     }
 
     pub fn pc_increase(&mut self) {
@@ -124,13 +126,6 @@ impl CPU {
     pub fn pop(&mut self) -> u8 {
         self.sp = if self.sp == 0xFF { 0x00 } else { self.sp + 1 };
         self.bus.get_memory(0x100 + self.sp as u16)
-    }
-
-    pub fn peek(&mut self) {
-        print!(" 0x{:x} ", self.sp as u16);
-        for i in 0x101 + self.sp as u16..0x101 + self.sp as u16 + 5 {
-            print!("{:x} ", self.bus.get_memory(i));
-        }
     }
 
     pub fn execute(&mut self, opcode: u8) -> u8 {

@@ -344,10 +344,14 @@ impl PPU {
                     Some(ref cart) => cart.borrow().mirroring,
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
-
-                self.nametables[(address as usize - 0x2000) % 0x800]
+                if address <= 0x2400 {
+                    self.nametables[(address as usize - 0x2000)]
+                }
+                else {
+                    0
+                }
             },
-            0x3F00..=0x3FFF => self.palettes[address as usize - 0x3F00],
+            0x3F00..=0x3FFF => self.palettes[(address % 32) as usize],
             _ => panic!("PPU requested read outside of memory range: ${:x}", address)
         };
         result
@@ -364,8 +368,9 @@ impl PPU {
                     Some(ref cart) => cart.borrow().mirroring,
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
-
-                self.nametables[(address as usize - 0x2000) % 0x800] = contents;
+                if address <= 0x2400 {
+                    self.nametables[(address as usize - 0x2000)] = contents;
+                }
                 contents
             },
             0x3F00..=0x3FFF => { self.palettes[(address % 32) as usize] = contents; contents },
