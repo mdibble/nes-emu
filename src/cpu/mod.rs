@@ -102,7 +102,7 @@ impl CPU {
     pub fn nmi(&mut self) {
         self.push((self.pc >> 8) as u8 & 0xFF);
         self.push(self.pc as u8 & 0xFF);
-        self.push(self.p);
+        self.push(self.p | 0x10);
         self.set_interrupt_disable(true);
         self.set_b_01(true);
 

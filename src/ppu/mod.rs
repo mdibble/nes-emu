@@ -18,7 +18,6 @@ pub struct PPU {
     reg_ppu_mask: u8,       // $2001
     reg_ppu_status: u8,     // $2002
     reg_oam_addr: u8,       // $2003
-    reg_oam_data: u8,       // $2004
 
     x_scroll: u8,
 
@@ -61,7 +60,6 @@ impl PPU {
             reg_ppu_mask: 0b00000000,
             reg_ppu_status: 0b00000000,
             reg_oam_addr: 0b00000000,
-            reg_oam_data: 0b00000000,
 
             x_scroll: 0,
 
@@ -190,7 +188,7 @@ impl PPU {
         }
 
         // Information of current scanline/cycle
-        let enable_rendering = self.reg_ppu_mask & 0b00011000 != 0;
+        let enable_rendering = (self.reg_ppu_mask & 0b00011000) != 0;
         let visible_scanline = self.scanline <= 239;
         let prerender_scanline = self.scanline == 261;
         let visible_cycle = self.cycle >= 1 && self.cycle <= 256;
@@ -315,11 +313,10 @@ impl PPU {
         result
     }
 
-    pub fn write_reg(&mut self, address: u16, contents: u8) -> u8 {
+    pub fn write_reg(&mut self, address: u16, contents: u8) {
         self.reg_ppu_status &= 0b11100000;
         self.reg_ppu_status |= contents & 0b00011111;
-
-        let result = match address {
+        match address {
             0x2000 => self.write_ppu_ctrl(contents),
             0x2001 => self.write_ppu_mask(contents),
             0x2003 => self.write_oam_addr(contents),
@@ -329,8 +326,7 @@ impl PPU {
             0x2007 => self.write_ppu_data(contents),
             0x4014 => self.write_oam_dma(contents),
             _ => panic!("No register at this location! ${:x}", address)
-        };
-        result
+        }
     }
 
     pub fn get_memory(&self, address: u16) -> u8 {
@@ -344,11 +340,13 @@ impl PPU {
                     Some(ref cart) => cart.borrow().mirroring,
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
-                if address <= 0x2400 {
-                    self.nametables[(address as usize - 0x2000)]
-                }
-                else {
-                    0
+                let location = (address % 0x1000) + 0x2000;
+                match location {
+                    0x2000..=0x23FF => self.nametables[(location as usize - 0x2000)],
+                    0x2400..=0x27FF => self.nametables[(location as usize - 0x2400)],
+                    0x2800..=0x2BFF => self.nametables[(location as usize - 0x2400)],
+                    0x2C00..=0x2FFF => self.nametables[(location as usize - 0x2800)],
+                    _ => panic!("Invalid")
                 }
             },
             0x3F00..=0x3FFF => self.palettes[(address % 32) as usize],
@@ -357,8 +355,8 @@ impl PPU {
         result
     }
 
-    pub fn write_memory(&mut self, address: u16, contents: u8) -> u8 {
-        let result = match address {
+    pub fn write_memory(&mut self, address: u16, contents: u8) {
+        match address {
             0x0000..=0x1FFF => match self.cartridge {
                 Some(ref cart) => cart.borrow_mut().chr_write(address, contents),
                 _ => panic!("PPU unable to write address ${:x} to cartridge", address)
@@ -368,14 +366,19 @@ impl PPU {
                     Some(ref cart) => cart.borrow().mirroring,
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
-                if address <= 0x2400 {
-                    self.nametables[(address as usize - 0x2000)] = contents;
-                }
-                contents
+                let location = (address % 0x1000) + 0x2000;
+                let new_location = match location {
+                    0x2000..=0x23FF => location as usize - 0x2000,
+                    0x2400..=0x27FF => location as usize - 0x2400,
+                    0x2800..=0x2BFF => location as usize - 0x2400,
+                    0x2C00..=0x2FFF => location as usize - 0x2800,
+                    _ => 0
+                };
+                self.nametables[new_location] = contents;
+                0
             },
             0x3F00..=0x3FFF => { self.palettes[(address % 32) as usize] = contents; contents },
             _ => panic!("PPU requested write outside of memory range: ${:x}", address)
         };
-        result
     }
 }

@@ -26,11 +26,6 @@ impl Mapper for NROM {
     fn prg_write(&mut self, address: u16, contents: u8) -> u8 {
         match address {
             0x6000..=0x7FFF => self.data.prg_ram[address as usize - 0x6000] = contents,
-            0x8000..=0xBFFF => self.data.prg_rom[address as usize - 0x8000] = contents,
-            0xC000..=0xFFFF => {
-                let end = self.data.prg_rom.len();
-                self.data.prg_rom[end - 0x4000 + (address as usize - 0xC000)] = contents;
-            }, 
             _ => panic!("Invalid write!")
         };
         contents

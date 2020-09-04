@@ -41,6 +41,14 @@ impl NES {
             }
         }
 
+        for row in 0..30 {
+            for col in 32..64 {
+                let val = self.cpu.bus.ppu.get_memory(0x2400 + (row * 32) + (col - 32));
+                canvas.set_draw_color(Color::RGB(val, val, val));
+                canvas.fill_rect(Rect::new(col as i32 * 2, row as i32 * 2, 2, 2)).unwrap();
+            }
+        }
+
         canvas.present();
         self.cpu.bus.ppu.draw = false;
     }

@@ -2,30 +2,30 @@ use crate::ppu::PPU;
 
 impl PPU {
     pub fn read_ppu_status(&mut self) -> u8 {
-        let val = self.reg_ppu_status;
+        let mut val = self.reg_ppu_status;
         self.writing = false;
 
         if self.nmi_occurred {
-            self.reg_ppu_status |= 0b10000000;
+            val |= 0b10000000;
         }
         else {
-            self.reg_ppu_status &= 0b01111111;
+            val &= 0b01111111;
         }
         self.nmi_occurred = false;
+        self.reg_ppu_status &= 0b01111111;
         self.update_nmi_status();
         val
     }
 
     pub fn read_oam_data(&self) -> u8 {
-        panic!("Tried to read OAM data");
-        self.reg_oam_data
+        self.oam_memory[self.reg_oam_addr as usize]
     }
 
-    pub fn read_ppu_data(&self) -> u8 {
+    pub fn read_ppu_data(&mut self) -> u8 {
         panic!("Tried to read PPU data");
         let result = self.get_memory(self.vram_address);
         // Deal with buffering
-        if self.reg_ppu_ctrl & 0b00000100 == 0b00000100 {
+        if (self.reg_ppu_ctrl & 0b00000100) == 0b00000100 {
             self.vram_address += 32;
         }
         else {
@@ -34,30 +34,27 @@ impl PPU {
         result
     }
 
-    pub fn write_ppu_ctrl(&mut self, contents: u8) -> u8 {
+    pub fn write_ppu_ctrl(&mut self, contents: u8) {
         self.reg_ppu_ctrl = contents;
         self.nmi_output = (contents >> 7) & 1 == 1;
         self.update_nmi_status();
         self.temp_address = (self.temp_address & 0xF3FF) | ((contents as u16 & 0x03) << 10);
-        self.reg_ppu_ctrl
     }
 
-    pub fn write_ppu_mask(&mut self, contents: u8) -> u8 {
+    pub fn write_ppu_mask(&mut self, contents: u8) {
         self.reg_ppu_mask = contents;
-        self.reg_ppu_mask
     }
 
-    pub fn write_oam_addr(&mut self, contents: u8) -> u8 {
+    pub fn write_oam_addr(&mut self, contents: u8) {
         self.reg_oam_addr = contents;
-        self.reg_oam_addr
     }
 
-    pub fn write_oam_data(&mut self, contents: u8) -> u8 {
-        self.reg_oam_data = contents;
-        self.reg_oam_data
+    pub fn write_oam_data(&mut self, contents: u8) {
+        self.oam_memory[self.reg_oam_addr as usize] = contents;
+        self.reg_oam_addr += 1;
     }
 
-    pub fn write_ppu_scroll(&mut self, contents: u8) -> u8 {
+    pub fn write_ppu_scroll(&mut self, contents: u8) {
         if self.writing == false {
             self.temp_address &= 0b0111111111100000;
             self.temp_address |= (contents as u16) >> 3;
@@ -71,10 +68,9 @@ impl PPU {
             self.temp_address |= (contents as u16 & 0xF8) << 2;
             self.writing = false;
         }
-        contents
     }
 
-    pub fn write_ppu_addr(&mut self, contents: u8) -> u8 {
+    pub fn write_ppu_addr(&mut self, contents: u8) {
         if self.writing == false {
             self.temp_address &= 0b0000000011111111;
             self.temp_address |= (contents as u16 & 0b00111111) << 8;
@@ -86,22 +82,19 @@ impl PPU {
             self.vram_address = self.temp_address;
             self.writing = false;
         }
-        contents
     }
 
-    pub fn write_ppu_data(&mut self, contents: u8) -> u8 {
+    pub fn write_ppu_data(&mut self, contents: u8) {
         self.write_memory(self.vram_address, contents);
-        if self.reg_ppu_ctrl & 0b00000100 == 0b00000100 {
+        if (self.reg_ppu_ctrl & 0b00000100) == 0b0000100 {
             self.vram_address += 32;
         }
         else {
             self.vram_address += 1;
         }
-        contents
     }
 
-    pub fn write_oam_dma(&mut self, contents: u8) -> u8 {
+    pub fn write_oam_dma(&mut self, contents: u8) {
         //println!("Wrote to $4014");
-        contents
     }
 }
