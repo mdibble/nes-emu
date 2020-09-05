@@ -179,11 +179,7 @@ impl PPU {
             self.scanline += 1;
             if self.scanline > 261 {
                 self.scanline = 0;
-
-                if self.even_frame {
-                    self.cycle += 1;
-                }
-                self.even_frame = !self.even_frame;
+                // Deal with odd and even frames
             }
         }
 
@@ -243,9 +239,13 @@ impl PPU {
         // VBlank
         if self.scanline == 241 && self.cycle == 1 {
             self.draw = true; // ready to draw to canvas
+            self.reg_ppu_status |= 0b10000000;
+            if (self.reg_ppu_ctrl & 0b10000000) == 0b10000000 {
+                self.nmi_output = true;
+            }
             self.nmi_occurred = true;
             self.update_nmi_status();
-            self.reg_ppu_status |= 0b10000000;
+            
         }
 
         // VBlank off
@@ -375,9 +375,8 @@ impl PPU {
                     _ => 0
                 };
                 self.nametables[new_location] = contents;
-                0
             },
-            0x3F00..=0x3FFF => { self.palettes[(address % 32) as usize] = contents; contents },
+            0x3F00..=0x3FFF => self.palettes[(address % 32) as usize] = contents,
             _ => panic!("PPU requested write outside of memory range: ${:x}", address)
         };
     }

@@ -51,7 +51,7 @@ impl PPU {
 
     pub fn write_oam_data(&mut self, contents: u8) {
         self.oam_memory[self.reg_oam_addr as usize] = contents;
-        self.reg_oam_addr += 1;
+        self.reg_oam_addr = self.reg_oam_addr.wrapping_add(1);
     }
 
     pub fn write_ppu_scroll(&mut self, contents: u8) {

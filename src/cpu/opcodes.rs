@@ -4,17 +4,23 @@ use super::addressing_modes::Mode;
 impl CPU {
     pub fn adc(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
-        let val = self.bus.get_memory(address);
-
-        let mut result = self.a.wrapping_add(val);
-        if self.get_carry() { result = result.wrapping_add(1); };
-
-        if !((self.a ^ val) & 0x80 != 0) && ((self.a ^ result) & 0x80 != 0) { self.set_overflow(true); }  else { self.set_overflow(false); }
-        if result < self.a { self.set_carry(true); } else { self.set_carry(false); }
-        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false) };
-        if result == 0 { self.set_zero(true); } else { self.set_zero(false) };
-
-        self.a = result;
+        
+        let a = self.a;
+        let b = self.bus.get_memory(address);
+        let c = self.p & 1;
+        self.a = a + b + c;
+        if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
+        if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        if a as u16 + b as u16 + c as u16 > 0xFF {
+            self.p |= 0x1; // carry = 1
+        } else {
+            self.p &= !0x1; // carry = 0
+        }
+        if (a ^ b) & 0x80 == 0 && (a ^ self.a) & 0x80 != 0 {
+            self.p |= 0b01000000;
+        } else {
+            self.p &= 0b10111111;
+        }
 
         extra_cycle
     }
@@ -36,10 +42,8 @@ impl CPU {
         let (address, _) = self.set_mode(mode);
 
         let operand = if acc_mode { self.a } else { self.bus.get_memory(address) };
-
+        let result = operand << 1;
         if operand & 0b10000000 == 0b10000000 { self.set_carry(true); } else { self.set_carry(false); }
-        let mut result = operand << 1;
-        result &= 0xFF;
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
 
@@ -330,9 +334,8 @@ impl CPU {
         
         let operand = if acc_mode { self.a } else { self.bus.get_memory(address) };
 
+        let result = operand >> 1;
         if operand & 0b00000001 == 0b00000001 { self.set_carry(true); } else { self.set_carry(false); }
-        let mut result = operand >> 1;
-        result &= 0xFF;
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
 
@@ -403,7 +406,6 @@ impl CPU {
             result = result | 0b00000001;
         }
         if operand & 0b10000000 == 0b10000000 { self.set_carry(true); } else { self.set_carry(false); }
-        result &= 0xFF;
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
 
@@ -429,7 +431,6 @@ impl CPU {
             result = result | 0b10000000;
         }
         if operand & 0b00000001 == 0b00000001 { self.set_carry(true); } else { self.set_carry(false); }
-        result &= 0xFF;
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
 
@@ -466,17 +467,23 @@ impl CPU {
 
     pub fn sbc(&mut self, mode: Mode) -> u8 {
         let (address, extra_cycle) = self.set_mode(mode);
-        let val = self.bus.get_memory(address);
-
-        let mut result = self.a.wrapping_sub(val);
-        if self.get_carry() == false { result = result.wrapping_sub(1); };
-
-        if ((self.a ^ result) & 0x80 != 0) && ((self.a ^ val) & 0x80 != 0) { self.set_overflow(true); }  else { self.set_overflow(false); }
-        if result < self.a { self.set_carry(true); } else { self.set_carry(false); }
-        if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false) };
-        if result == 0 { self.set_zero(true); } else { self.set_zero(false) };
-
-        self.a = result;
+        
+        let a = self.a;
+        let b = self.bus.get_memory(address);
+        let c = self.p & 1;
+        self.a = a - b - (1 - c);
+        if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
+        if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
+        if a as i8 - b as i8 - (1 - c) as i8 >= 0x0 {
+            self.p |= 0x1;
+        } else {
+            self.p &= !0x1;
+        }
+        if (a ^ b) & 0x80 != 0 && (a ^ self.a) & 0x80 != 0 {
+            self.p |= 0b01000000;
+        } else {
+            self.p &= 0b10111111;
+        }
 
         extra_cycle
     }

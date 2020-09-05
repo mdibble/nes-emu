@@ -1,10 +1,12 @@
 mod mapper;
 mod nrom_0;
+mod mmc1_1;
 mod rom_data;
 mod rom_header;
 
 use self::mapper::Mapper;
 use self::nrom_0::NROM;
+use self::mmc1_1::MMC1;
 use self::rom_data::RomData;
 
 pub struct Cartridge {
@@ -20,6 +22,7 @@ impl Cartridge {
 
         let mapper: Box<dyn Mapper> = match rom_data.header.mapper_id {
             0 => Box::new(NROM::new(rom_data)),
+            1 => Box::new(MMC1::new(rom_data)),
             _ => panic!("Mapper isn't supported")
         };
     
@@ -34,7 +37,7 @@ impl Cartridge {
         self.mapper.prg_read(address)
     }
 
-    pub fn prg_write(&mut self, address: u16, contents: u8) -> u8 {
+    pub fn prg_write(&mut self, address: u16, contents: u8) {
         self.mapper.prg_write(address, contents)
     }
 
@@ -42,7 +45,7 @@ impl Cartridge {
         self.mapper.chr_read(address)
     }
 
-    pub fn chr_write(&mut self, address: u16, contents: u8) -> u8 {
+    pub fn chr_write(&mut self, address: u16, contents: u8) {
         self.mapper.chr_write(address, contents)
     }
 }
