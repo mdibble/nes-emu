@@ -8,13 +8,13 @@ impl CPU {
         let a = self.a;
         let b = self.bus.get_memory(address);
         let c = self.p & 1;
-        self.a = a + b + c;
+        self.a = a.wrapping_add(b).wrapping_add(c);
         if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
         if a as u16 + b as u16 + c as u16 > 0xFF {
-            self.p |= 0x1; // carry = 1
+            self.p |= 0x1;
         } else {
-            self.p &= !0x1; // carry = 0
+            self.p &= !0x1;
         }
         if (a ^ b) & 0x80 == 0 && (a ^ self.a) & 0x80 != 0 {
             self.p |= 0b01000000;
@@ -471,10 +471,10 @@ impl CPU {
         let a = self.a;
         let b = self.bus.get_memory(address);
         let c = self.p & 1;
-        self.a = a - b - (1 - c);
+        self.a = a.wrapping_sub(b).wrapping_sub(1 - c);
         if self.a == 0 { self.set_zero(true); } else { self.set_zero(false); }
         if self.a & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
-        if a as i8 - b as i8 - (1 - c) as i8 >= 0x0 {
+        if a as i16 - b as i16 - (1 - c) as i16 >= 0x0 {
             self.p |= 0x1;
         } else {
             self.p &= !0x1;

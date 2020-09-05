@@ -111,7 +111,8 @@ impl PPU {
 
     pub fn fetch_at(&mut self) {
         let address = 0x23C0 | (self.vram_address & 0x0C00) | ((self.vram_address >> 4) & 0x38) | ((self.vram_address >> 2) & 0x07);
-        self.fetched_at = self.get_memory(address);
+        let shift = ((self.vram_address >> 4) & 4) | (self.vram_address & 2);
+        self.fetched_at = (self.get_memory(address) >> shift) & 3;
     }
 
     pub fn fetch_tile_lo(&mut self) {
@@ -341,13 +342,28 @@ impl PPU {
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
                 let location = (address % 0x1000) + 0x2000;
-                match location {
-                    0x2000..=0x23FF => self.nametables[(location as usize - 0x2000)],
-                    0x2400..=0x27FF => self.nametables[(location as usize - 0x2400)],
-                    0x2800..=0x2BFF => self.nametables[(location as usize - 0x2400)],
-                    0x2C00..=0x2FFF => self.nametables[(location as usize - 0x2800)],
-                    _ => panic!("Invalid")
+                match mirror_mode {
+                    0 => {
+                        match location {
+                            0x2000..=0x23FF => self.nametables[(location as usize - 0x2000)],
+                            0x2400..=0x27FF => self.nametables[(location as usize - 0x2400)],
+                            0x2800..=0x2BFF => self.nametables[(location as usize - 0x2400)],
+                            0x2C00..=0x2FFF => self.nametables[(location as usize - 0x2800)],
+                            _ => panic!("Invalid")
+                        }
+                    }
+                    1 => {
+                        match location {
+                            0x2000..=0x23FF => self.nametables[(location as usize - 0x2000)],
+                            0x2400..=0x27FF => self.nametables[(location as usize - 0x2000)],
+                            0x2800..=0x2BFF => self.nametables[(location as usize - 0x2800)],
+                            0x2C00..=0x2FFF => self.nametables[(location as usize - 0x2800)],
+                            _ => panic!("Invalid")
+                        }
+                    }
+                    _ => panic!("Invalid mirror mode")
                 }
+                
             },
             0x3F00..=0x3FFF => self.palettes[(address % 32) as usize],
             _ => panic!("PPU requested read outside of memory range: ${:x}", address)
@@ -367,14 +383,30 @@ impl PPU {
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
                 let location = (address % 0x1000) + 0x2000;
-                let new_location = match location {
-                    0x2000..=0x23FF => location as usize - 0x2000,
-                    0x2400..=0x27FF => location as usize - 0x2400,
-                    0x2800..=0x2BFF => location as usize - 0x2400,
-                    0x2C00..=0x2FFF => location as usize - 0x2800,
-                    _ => 0
-                };
-                self.nametables[new_location] = contents;
+                let new_location: u16;
+                match mirror_mode {
+                    0 => {
+                        new_location = match location {
+                            0x2000..=0x23FF => location - 0x2000,
+                            0x2400..=0x27FF => location - 0x2400,
+                            0x2800..=0x2BFF => location - 0x2400,
+                            0x2C00..=0x2FFF => location - 0x2800,
+                            _ => 0
+                        };
+                    },
+                    1 => {
+                        new_location = match location {
+                            0x2000..=0x23FF => location - 0x2000,
+                            0x2400..=0x27FF => location - 0x2000,
+                            0x2800..=0x2BFF => location - 0x2800,
+                            0x2C00..=0x2FFF => location - 0x2800,
+                            _ => 0
+                        };
+                    },
+                    _ => panic!("Unable to get cartridge mirror mode")
+                }
+                
+                self.nametables[new_location as usize] = contents;
             },
             0x3F00..=0x3FFF => self.palettes[(address % 32) as usize] = contents,
             _ => panic!("PPU requested write outside of memory range: ${:x}", address)
