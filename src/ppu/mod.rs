@@ -10,7 +10,7 @@ use std::rc::Rc;
 pub struct PPU {
     nametables: [u8; 0x800],
     palettes: [u8; 0x20],
-    oam_memory: [u8; 0x100],
+    pub oam_memory: [u8; 0x100],
     pub scanline: u16, // 260, y-axis
     pub cycle: u16, // 340, x-axis
 
@@ -19,8 +19,9 @@ pub struct PPU {
     reg_ppu_status: u8,     // $2002
     reg_oam_addr: u8,       // $2003
 
-    x_scroll: u8,
+    data_buffer: u8,
 
+    x_scroll: u8,
     vram_address: u16,
     temp_address: u16,
     writing: bool,
@@ -61,8 +62,9 @@ impl PPU {
             reg_ppu_status: 0b00000000,
             reg_oam_addr: 0b00000000,
 
-            x_scroll: 0,
+            data_buffer: 0x00,
 
+            x_scroll: 0,
             vram_address: 0x0000,
             temp_address: 0x0000,
             writing: false,
@@ -165,12 +167,7 @@ impl PPU {
     }
 
     pub fn get_palette_address(&self, palette: u8, pixel: u16) -> u16 {
-        if pixel == 0 {
-            0x3F00
-        }
-        else {
-            0x3F00 + (palette as u16 * 4) + pixel
-        }
+        0x3F00 + (palette as u16 * 4) + pixel // May need revision
     }
 
     pub fn tick(&mut self) {
@@ -325,7 +322,6 @@ impl PPU {
             0x2005 => self.write_ppu_scroll(contents),
             0x2006 => self.write_ppu_addr(contents),
             0x2007 => self.write_ppu_data(contents),
-            0x4014 => self.write_oam_dma(contents),
             _ => panic!("No register at this location! ${:x}", address)
         }
     }
@@ -365,7 +361,13 @@ impl PPU {
                 }
                 
             },
-            0x3F00..=0x3FFF => self.palettes[(address % 32) as usize],
+            0x3F00..=0x3FFF => {
+                let mut palette_address = address % 32;
+                if palette_address >= 16 && palette_address % 4 == 0 {
+                    palette_address -= 16;
+                }
+                self.palettes[palette_address as usize]
+            }
             _ => panic!("PPU requested read outside of memory range: ${:x}", address)
         };
         result
@@ -408,7 +410,13 @@ impl PPU {
                 
                 self.nametables[new_location as usize] = contents;
             },
-            0x3F00..=0x3FFF => self.palettes[(address % 32) as usize] = contents,
+            0x3F00..=0x3FFF => {
+                let mut palette_address = address % 32;
+                if palette_address >= 16 && palette_address % 4 == 0 {
+                    palette_address -= 16;
+                }
+                self.palettes[palette_address as usize] = contents;
+            }
             _ => panic!("PPU requested write outside of memory range: ${:x}", address)
         };
     }

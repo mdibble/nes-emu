@@ -16,6 +16,7 @@ pub struct CPU {
     p: u8,
     pub bus: Bus,
     cycles: u8,
+    stall: u16,
     total_cycles: usize
 }
 
@@ -30,15 +31,42 @@ impl CPU {
             p: 0x24,
             bus: Bus::new(cart_data),
             cycles: 0,
+            stall: 0,
             total_cycles: 0
         };
         cpu
     }
 
     pub fn tick(&mut self) {
+        if self.bus.dma_page != 0 {
+            let page = self.bus.dma_page;
+            self.bus.dma_page = 0;
+
+            for i in 0..256 as u16 {
+                self.bus.ppu.oam_memory[i as usize] = self.bus.get_memory((256 * (page as u16)) + i);
+            }
+            // println!("-------------------------");
+            // for i in 0..16 {
+            //     for j in 0..16 {
+            //         print!("{:02x} ", self.bus.ppu.oam_memory[(i * 16) + j]);
+            //     }
+            //     println!();
+            // }
+
+            self.stall += 513;
+            if self.total_cycles % 2 == 1 {
+                self.stall += 1;
+            }
+            return
+        }
+
+        if self.stall > 0 {
+            self.stall -= 1;
+            return
+        }
+
         if self.cycles == 0 {
             if self.bus.ppu.trigger_nmi {
-                // CPU must wait until the end of the current instruction to issue an NMI
                 self.bus.ppu.trigger_nmi = false;
                 self.nmi();
             }

@@ -10,7 +10,9 @@ pub struct Bus {
     pub ppu: PPU,
     // apu: APU
     pub cartridge: Rc<RefCell<Cartridge>>,
-    pub joypad: Joypad
+    pub joypad: Joypad,
+
+    pub dma_page: u8
 }
 
 impl Bus {
@@ -19,7 +21,9 @@ impl Bus {
             memory: [0; 0x800],
             ppu: PPU::new(),
             cartridge: Rc::new(RefCell::new(Cartridge::new(cart_data))),
-            joypad: Joypad::new()
+            joypad: Joypad::new(),
+
+            dma_page: 0
         };
         bus
     }
@@ -71,7 +75,7 @@ impl Bus {
             }
             0x4000..=0x4017 => {
                 if address == 0x4014 {
-                    self.ppu.write_reg(address, contents);
+                    self.dma_page = contents;
                 }
                 if address == 0x4016 || address == 0x4017 {
                     self.joypad.set_state();

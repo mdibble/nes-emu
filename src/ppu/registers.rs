@@ -22,9 +22,17 @@ impl PPU {
     }
 
     pub fn read_ppu_data(&mut self) -> u8 {
-        panic!("Tried to read PPU data");
-        let result = self.get_memory(self.vram_address);
-        // Deal with buffering
+        let mut result = self.get_memory(self.vram_address);
+
+        if self.vram_address % 0x4000 < 0x3F00 {
+            let temp = self.data_buffer;
+            self.data_buffer = result;
+            result = temp;
+        }
+        else {
+            self.data_buffer = self.get_memory(self.vram_address - 0x1000);
+        }
+
         if (self.reg_ppu_ctrl & 0b00000100) == 0b00000100 {
             self.vram_address += 32;
         }
@@ -92,9 +100,5 @@ impl PPU {
         else {
             self.vram_address += 1;
         }
-    }
-
-    pub fn write_oam_dma(&mut self, contents: u8) {
-        //println!("Wrote to $4014");
     }
 }
