@@ -11,6 +11,7 @@ pub struct PPU {
     nametables: [u8; 0x800],
     palettes: [u8; 0x20],
     pub oam_memory: [u8; 0x100],
+    pub secondary_oam: [u8; 0x20],
     pub scanline: u16, // 260, y-axis
     pub cycle: u16, // 340, x-axis
 
@@ -38,6 +39,11 @@ pub struct PPU {
     shift_reg_palette_hi: u8,
     palette_latch: u8,
 
+    shift_reg_sprite_lo: [u8; 8],
+    shift_reg_sprite_hi: [u8; 8],
+    sprite_latch: [u8; 8],
+    sprite_counter: [u8; 8],
+
     cartridge: Option<Rc<RefCell<Cartridge>>>,
 
     pub nmi_occurred: bool,
@@ -55,6 +61,7 @@ impl PPU {
             nametables: [0; 0x800],
             palettes: [0; 0x20],
             oam_memory: [0; 0x100],
+            secondary_oam: [0; 0x20],
             scanline: 0,
             cycle: 0, // maybe should be 341?
             reg_ppu_ctrl: 0b00000000,
@@ -80,6 +87,11 @@ impl PPU {
             shift_reg_palette_lo: 0,
             shift_reg_palette_hi: 0,
             palette_latch: 0,
+
+            shift_reg_sprite_lo: [0; 8],
+            shift_reg_sprite_hi: [0; 8],
+            sprite_latch: [0; 8],
+            sprite_counter: [0; 8],
 
             cartridge: None,
 
@@ -150,6 +162,31 @@ impl PPU {
         let latch_bit1 = (self.palette_latch & 0b10) >> 1;
         self.shift_reg_palette_lo |= latch_bit0;
         self.shift_reg_palette_hi |= latch_bit1;
+    }
+
+    pub fn eval_sprites(&mut self) {
+        let sprite_size = if self.reg_ppu_ctrl & 0b00100000 == 0b00100000 { 16 } else { 8 };
+        let mut spr_count = 0;
+
+        for n in 0..64 {
+            let y = self.oam_memory[n * 4] as u16; // u16 may not work here
+
+            if self.scanline >= y && self.scanline - y < sprite_size {
+                for m in 0..4 {
+                    self.secondary_oam[spr_count * 4 + m] = self.oam_memory[n * 4 + m];
+                }
+                spr_count += 1;
+            }
+
+            if spr_count == 8 {
+                self.reg_ppu_status |= 0b00100000; // Hardware bugs associated with this
+                break;
+            }
+        }
+    }
+
+    pub fn fetch_sprites(&mut self) {
+
     }
 
     pub fn render_pixel(&mut self) {
@@ -229,6 +266,15 @@ impl PPU {
                     // hori(v) = hori(t)
                     self.x_copy();
                 }
+            }
+        }
+
+        if enable_rendering && visible_scanline {
+            match self.cycle {
+                64 => { self.secondary_oam = [0xFF; 0x20] },
+                256 => { self.eval_sprites() },
+                340 => { self.fetch_sprites() },
+                _ => { }
             }
         }
 
