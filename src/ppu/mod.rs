@@ -186,7 +186,54 @@ impl PPU {
     }
 
     pub fn fetch_sprites(&mut self) {
+        self.shift_reg_sprite_lo = [0; 8];
+        self.shift_reg_sprite_hi = [0; 8];
+        self.sprite_latch = [0; 8];
+        self.sprite_counter = [0; 8];
 
+        let mut sprite_num = 0;
+        for i in 0..8 {
+            if self.secondary_oam[(i * 4) + 0] == 0xFF && self.secondary_oam[(i * 4) + 1] == 0xFF && self.secondary_oam[(i * 4) + 2] == 0xFF && self.secondary_oam[(i * 4) + 3] == 0xFF {
+                break;
+            }
+            else {
+                sprite_num += 1;
+            }
+        }
+
+        for i in 0..sprite_num {
+            let byte_0 = self.secondary_oam[i * 4 + 0]; // Y position
+            let byte_1 = self.secondary_oam[i * 4 + 1]; // PT tile
+            let byte_2 = self.secondary_oam[i * 4 + 2]; // Orientation, priority, palette
+            let byte_3 = self.secondary_oam[i * 4 + 3]; // X position
+
+            let sprite_size = if self.reg_ppu_ctrl & 0b00100000 == 0b00100000 { 16 } else { 8 };
+
+            let row = self.scanline - byte_0 as u16;
+            
+            let mut address;
+
+            if sprite_size == 8 {
+                let anchor: u16 = if ((self.reg_ppu_ctrl >> 3) & 1) == 1 { 0x1000 } else { 0x0 };
+                address = anchor + (byte_1 as u16 * 16);
+                address += row;
+            }
+
+            else {
+                let anchor: u16 = if (byte_1 & 1) == 1 { 0x1000 } else { 0x0 };
+                address = anchor + ((byte_1 as u16 & 0b11111110) * 16);
+                address += row;
+            }
+
+            let sr_temp_lo = self.get_memory(address);
+            let sr_temp_hi = self.get_memory(address + 8);
+
+            self.shift_reg_sprite_lo[i] = sr_temp_lo;
+            self.shift_reg_sprite_hi[i] = sr_temp_hi;
+
+            self.sprite_latch[i] = byte_2;
+            self.sprite_counter[i] = byte_3;
+        }
     }
 
     pub fn render_pixel(&mut self) {
@@ -198,6 +245,21 @@ impl PPU {
 
         let new_palette = self.get_memory(self.get_palette_address(palette, pixel));
 
+        if self.reg_ppu_mask & 0b00010000 == 0b00010000 {
+            for i in 0..8 {
+                if self.sprite_counter[i] == 0 {
+                    self.shift_reg_sprite_lo[i] <<= 1;
+                    self.shift_reg_sprite_hi[i] <<= 1;
+                }
+            }
+    
+            for i in 0..8 {
+                if self.sprite_counter[i] > 0 {
+                    self.sprite_counter[i] -= 1;
+                }
+            }
+        }   
+        
         self.display[(row as usize * 256 * 3) + (col * 3) as usize + 0] = SYS_COLORS[new_palette as usize].r;
         self.display[(row as usize * 256 * 3) + (col * 3) as usize + 1] = SYS_COLORS[new_palette as usize].g;
         self.display[(row as usize * 256 * 3) + (col * 3) as usize + 2] = SYS_COLORS[new_palette as usize].b;
