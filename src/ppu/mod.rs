@@ -225,8 +225,25 @@ impl PPU {
                 address += row;
             }
 
-            let sr_temp_lo = self.get_memory(address);
-            let sr_temp_hi = self.get_memory(address + 8);
+            let mut sr_temp_lo = self.get_memory(address);
+            let mut sr_temp_hi = self.get_memory(address + 8);
+
+            if byte_2 & 0x40 == 0x40 {
+                let old_lo = sr_temp_lo;
+                let old_hi = sr_temp_hi;
+
+                sr_temp_lo = 0;
+                sr_temp_hi = 0;
+
+                for i in 0..8 {
+                    if (old_lo >> i) & 1 == 1 {
+                        sr_temp_lo |= 1 << (7 - i);
+                    }
+                    if (old_hi >> i) & 1 == 1 {
+                        sr_temp_hi |= 1 << (7 - i);
+                    }
+                }
+            }
 
             self.shift_reg_sprite_lo[i] = sr_temp_lo;
             self.shift_reg_sprite_hi[i] = sr_temp_hi;
