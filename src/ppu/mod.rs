@@ -245,6 +245,23 @@ impl PPU {
 
         let new_palette = self.get_memory(self.get_palette_address(palette, pixel));
 
+        self.display[(row as usize * 256 * 3) + (col * 3) as usize + 0] = SYS_COLORS[new_palette as usize].r;
+        self.display[(row as usize * 256 * 3) + (col * 3) as usize + 1] = SYS_COLORS[new_palette as usize].g;
+        self.display[(row as usize * 256 * 3) + (col * 3) as usize + 2] = SYS_COLORS[new_palette as usize].b;
+
+        for i in 0..8 {
+            if self.sprite_counter[i] == 0 && ((self.shift_reg_sprite_lo[i] & 0x80) != 0 || (self.shift_reg_sprite_hi[i] & 0x80) != 0) {
+                let spr_pixel = (self.shift_reg_sprite_hi[i] >> 7) << 1 | self.shift_reg_sprite_lo[i] >> 7;
+                let spr_palette = (self.sprite_latch[i] & 0x3) + 4;
+
+                let spr_new_palette = self.get_memory(self.get_palette_address(spr_palette, spr_pixel as u16));
+                
+                self.display[(row as usize * 256 * 3) + (col * 3) as usize + 0] = SYS_COLORS[spr_new_palette as usize].r;
+                self.display[(row as usize * 256 * 3) + (col * 3) as usize + 1] = SYS_COLORS[spr_new_palette as usize].g;
+                self.display[(row as usize * 256 * 3) + (col * 3) as usize + 2] = SYS_COLORS[spr_new_palette as usize].b;
+            }
+        }
+
         if self.reg_ppu_mask & 0b00010000 == 0b00010000 {
             for i in 0..8 {
                 if self.sprite_counter[i] == 0 {
@@ -259,10 +276,6 @@ impl PPU {
                 }
             }
         }   
-        
-        self.display[(row as usize * 256 * 3) + (col * 3) as usize + 0] = SYS_COLORS[new_palette as usize].r;
-        self.display[(row as usize * 256 * 3) + (col * 3) as usize + 1] = SYS_COLORS[new_palette as usize].g;
-        self.display[(row as usize * 256 * 3) + (col * 3) as usize + 2] = SYS_COLORS[new_palette as usize].b;
     }
 
     pub fn get_palette_address(&self, palette: u8, pixel: u16) -> u16 {
