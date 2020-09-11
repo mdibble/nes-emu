@@ -44,6 +44,9 @@ pub struct PPU {
     sprite_latch: [u8; 8],
     sprite_counter: [u8; 8],
 
+    queue_sprite_zero: bool,
+    sprite_zero_in_line: bool,
+
     cartridge: Option<Rc<RefCell<Cartridge>>>,
 
     pub nmi_occurred: bool,
@@ -92,6 +95,9 @@ impl PPU {
             shift_reg_sprite_hi: [0; 8],
             sprite_latch: [0; 8],
             sprite_counter: [0; 8],
+
+            queue_sprite_zero: false,
+            sprite_zero_in_line: false,
 
             cartridge: None,
 
@@ -175,6 +181,11 @@ impl PPU {
                 for m in 0..4 {
                     self.secondary_oam[spr_count * 4 + m] = self.oam_memory[n * 4 + m];
                 }
+
+                if n == 0 {
+                    self.queue_sprite_zero = true;
+                }
+
                 spr_count += 1;
             }
 
@@ -256,9 +267,12 @@ impl PPU {
     pub fn render_pixel(&mut self) {
         let row = self.scanline;
         let col = self.cycle - 1;
-
-        let pixel = (self.shift_reg_pt_hi >> 15) << 1 | self.shift_reg_pt_lo >> 15;
-        let palette = (self.shift_reg_palette_hi >> 7) << 1 | self.shift_reg_palette_lo >> 7;
+        
+        let bg_shift = 15 - self.x_scroll;
+        let palette_shift = 7 - self.x_scroll;
+        
+        let pixel = ((self.shift_reg_pt_hi >> bg_shift) & 1) << 1 | ((self.shift_reg_pt_lo >> bg_shift) & 1);
+        let palette = ((self.shift_reg_palette_hi >> palette_shift) & 1) << 1 | ((self.shift_reg_palette_lo >> palette_shift) & 1);
 
         let new_palette = self.get_memory(self.get_palette_address(palette, pixel));
 
@@ -273,9 +287,17 @@ impl PPU {
 
                 let spr_new_palette = self.get_memory(self.get_palette_address(spr_palette, spr_pixel as u16));
                 
-                self.display[(row as usize * 256 * 3) + (col * 3) as usize + 0] = SYS_COLORS[spr_new_palette as usize].r;
-                self.display[(row as usize * 256 * 3) + (col * 3) as usize + 1] = SYS_COLORS[spr_new_palette as usize].g;
-                self.display[(row as usize * 256 * 3) + (col * 3) as usize + 2] = SYS_COLORS[spr_new_palette as usize].b;
+                if pixel == 0 || (self.sprite_latch[i] >> 5) & 1 == 0 {
+                    self.display[(row as usize * 256 * 3) + (col * 3) as usize + 0] = SYS_COLORS[spr_new_palette as usize].r;
+                    self.display[(row as usize * 256 * 3) + (col * 3) as usize + 1] = SYS_COLORS[spr_new_palette as usize].g;
+                    self.display[(row as usize * 256 * 3) + (col * 3) as usize + 2] = SYS_COLORS[spr_new_palette as usize].b;
+                }
+
+                if i == 0 && self.sprite_zero_in_line {
+                    if pixel != 0 && spr_pixel != 0 {
+                        self.reg_ppu_status |= 0x40;
+                    }
+                }
             }
         }
 
@@ -296,7 +318,12 @@ impl PPU {
     }
 
     pub fn get_palette_address(&self, palette: u8, pixel: u16) -> u16 {
-        0x3F00 + (palette as u16 * 4) + pixel // May need revision
+        if pixel == 0 {
+            0x3F00
+        }
+        else {
+            0x3F00 + (palette as u16 * 4) + pixel // May need revision
+        }
     }
 
     pub fn tick(&mut self) {
@@ -318,6 +345,15 @@ impl PPU {
         let fetch_cycle = self.cycle >= 321 && self.cycle <= 336;
 
         // Start of drawing
+
+        if self.cycle == 0 && self.queue_sprite_zero {
+            self.sprite_zero_in_line = true;
+            self.queue_sprite_zero = false;
+        }
+
+        if self.cycle == 256 {
+            self.sprite_zero_in_line = false;
+        }
 
         if enable_rendering {
             if visible_scanline && visible_cycle {

@@ -7,6 +7,9 @@
 
 extern crate sdl2;
 
+use std::thread;
+use std::time;
+
 use sdl2::keyboard::Keycode;
 use sdl2::event::Event;
 
@@ -22,7 +25,7 @@ use nes::NES;
 use std::fs;
 
 fn main() {
-    let cart_data = fs::read("roms/donkey_kong.nes");
+    let cart_data = fs::read("roms/smb.nes");
 
     let cart_data = match cart_data {
         Ok(g) => g,
@@ -73,6 +76,11 @@ fn main() {
                 }
             }
             nes.cpu.bus.joypad.write(inputs)
+        }
+
+        // Temporary and awful solution for capping system speed
+        if nes.cpu.bus.ppu.scanline == 241 && nes.cpu.bus.ppu.cycle >= 338 {
+            thread::sleep(time::Duration::from_millis(16));
         }
     }
 }
