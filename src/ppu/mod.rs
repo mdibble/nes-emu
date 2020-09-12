@@ -227,18 +227,23 @@ impl PPU {
             if sprite_size == 8 {
                 let anchor: u16 = if ((self.reg_ppu_ctrl >> 3) & 1) == 1 { 0x1000 } else { 0x0 };
                 address = anchor + (byte_1 as u16 * 16);
-                address += row;
             }
 
             else {
                 let anchor: u16 = if (byte_1 & 1) == 1 { 0x1000 } else { 0x0 };
                 address = anchor + ((byte_1 as u16 & 0b11111110) * 16);
+            }
+
+            if byte_2 & 0x80 != 0x80 {
                 address += row;
+            }   
+            else {
+                address += sprite_size - 1 - row;
             }
 
             let mut sr_temp_lo = self.get_memory(address);
             let mut sr_temp_hi = self.get_memory(address + 8);
-
+            
             if byte_2 & 0x40 == 0x40 {
                 let old_lo = sr_temp_lo;
                 let old_hi = sr_temp_hi;
@@ -286,17 +291,18 @@ impl PPU {
                 let spr_palette = (self.sprite_latch[i] & 0x3) + 4;
 
                 let spr_new_palette = self.get_memory(self.get_palette_address(spr_palette, spr_pixel as u16));
-                
-                if pixel == 0 || (self.sprite_latch[i] >> 5) & 1 == 0 {
-                    self.display[(row as usize * 256 * 3) + (col * 3) as usize + 0] = SYS_COLORS[spr_new_palette as usize].r;
-                    self.display[(row as usize * 256 * 3) + (col * 3) as usize + 1] = SYS_COLORS[spr_new_palette as usize].g;
-                    self.display[(row as usize * 256 * 3) + (col * 3) as usize + 2] = SYS_COLORS[spr_new_palette as usize].b;
-                }
 
                 if i == 0 && self.sprite_zero_in_line {
                     if pixel != 0 && spr_pixel != 0 {
                         self.reg_ppu_status |= 0x40;
                     }
+                }
+                
+                if pixel == 0 || (self.sprite_latch[i] >> 5) & 1 == 0 {
+                    self.display[(row as usize * 256 * 3) + (col * 3) as usize + 0] = SYS_COLORS[spr_new_palette as usize].r;
+                    self.display[(row as usize * 256 * 3) + (col * 3) as usize + 1] = SYS_COLORS[spr_new_palette as usize].g;
+                    self.display[(row as usize * 256 * 3) + (col * 3) as usize + 2] = SYS_COLORS[spr_new_palette as usize].b;
+                    break;
                 }
             }
         }
@@ -333,7 +339,10 @@ impl PPU {
             self.scanline += 1;
             if self.scanline > 261 {
                 self.scanline = 0;
-                // Deal with odd and even frames
+                // if self.even_frame {
+                //     self.cycle += 1;
+                //     self.even_frame = !self.even_frame;
+                // }
             }
         }
 
