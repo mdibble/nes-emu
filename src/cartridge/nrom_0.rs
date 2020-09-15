@@ -1,5 +1,6 @@
 use crate::cartridge::Mapper;
 use crate::cartridge::RomData;
+use crate::cartridge::Mirror;
 
 pub struct NROM {
     data: RomData
@@ -41,5 +42,14 @@ impl Mapper for NROM {
         if self.data.header.chr_rom_size == 0 {
             self.data.chr_ram[address as usize] = contents;
         }
+    }
+
+    fn mirror_mode(&self) -> Mirror {
+        let val: Mirror = match self.data.header.mirror_mode {
+            0 => Mirror::Horizontal,
+            1 => Mirror::Vertical,
+            _ => panic!("Mirror mode not implemented (NROM)")
+        };
+        val
     }
 }

@@ -9,16 +9,20 @@ use self::nrom_0::NROM;
 use self::mmc1_1::MMC1;
 use self::rom_data::RomData;
 
+pub enum Mirror {
+    Horizontal,
+    Vertical,
+    OneScreenL,
+    OneScreenH
+}
+
 pub struct Cartridge {
-    mapper: Box<dyn Mapper>,
-    pub mirroring: u8
+    pub mapper: Box<dyn Mapper>
 }
 
 impl Cartridge {
     pub fn new(dump: Vec<u8>) -> Cartridge {
         let rom_data = RomData::new(dump);
-
-        let mirror_mode = rom_data.header.mirror_mode;
 
         let mapper: Box<dyn Mapper> = match rom_data.header.mapper_id {
             0 => Box::new(NROM::new(rom_data)),
@@ -27,8 +31,7 @@ impl Cartridge {
         };
     
         let cartridge = Cartridge {
-            mapper: mapper,
-            mirroring: mirror_mode
+            mapper: mapper
         };
         cartridge
     }
@@ -47,5 +50,9 @@ impl Cartridge {
 
     pub fn chr_write(&mut self, address: u16, contents: u8) {
         self.mapper.chr_write(address, contents)
+    }
+
+    pub fn mirror_mode(&self) -> Mirror {
+        self.mapper.mirror_mode()
     }
 }

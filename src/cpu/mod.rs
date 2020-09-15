@@ -45,13 +45,6 @@ impl CPU {
             for i in 0..256 as u16 {
                 self.bus.ppu.oam_memory[i as usize] = self.bus.get_memory((256 * (page as u16)) + i);
             }
-            // println!("-------------------------");
-            // for i in 0..16 {
-            //     for j in 0..16 {
-            //         print!("{:02x} ", self.bus.ppu.oam_memory[(i * 16) + j]);
-            //     }
-            //     println!();
-            // }
 
             self.stall += 513;
             if self.total_cycles % 2 == 1 {
@@ -72,10 +65,10 @@ impl CPU {
             }
             else {
                 let opcode = self.bus.get_memory(self.pc);
-                // if self.total_cycles >= 10370000 {
-                //     print!("${:04x}:\t0x{:02x}\t({:02x} {:02x})\t\t", self.pc, opcode, self.bus.get_memory(self.pc + 1), self.bus.get_memory(self.pc + 2));
-                //     print!("A:{:02x}\tX:{:02x}\tY:{:02x}\tP:{:02x}\tSP:{:02x}\tPPU:{}, {}\tCYC:{}\n", self.a, self.x, self.y, self.p, self.sp, self.bus.ppu.cycle, self.bus.ppu.scanline, self.total_cycles);
-                // }
+
+                // print!("${:04x}:\t0x{:02x}\t({:02x} {:02x})\t\t", self.pc, opcode, self.bus.get_memory(self.pc + 1), self.bus.get_memory(self.pc + 2));
+                // print!("A:{:02x}\tX:{:02x}\tY:{:02x}\tP:{:02x}\tSP:{:02x}\tPPU:{}, {}\tCYC:{}\n", self.a, self.x, self.y, self.p, self.sp, self.bus.ppu.cycle, self.bus.ppu.scanline, self.total_cycles);
+                
                 self.pc_increase();
                 self.cycles = self.execute(opcode) + CYCLE_TABLE[opcode as usize] as u8;
                 self.cycles -= 1;

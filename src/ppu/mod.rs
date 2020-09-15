@@ -4,6 +4,7 @@ mod colors;
 use colors::SYS_COLORS;
 
 use crate::cartridge::Cartridge;
+use crate::cartridge::Mirror;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -517,12 +518,12 @@ impl PPU {
             }
             0x2000..=0x3EFF => {
                 let mirror_mode = match self.cartridge {
-                    Some(ref cart) => cart.borrow().mirroring,
+                    Some(ref cart) => cart.borrow().mirror_mode(),
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
                 let location = (address % 0x1000) + 0x2000;
                 match mirror_mode {
-                    0 => {
+                    Mirror::Horizontal => {
                         match location {
                             0x2000..=0x23FF => self.nametables[(location as usize - 0x2000)],
                             0x2400..=0x27FF => self.nametables[(location as usize - 0x2400)],
@@ -531,7 +532,7 @@ impl PPU {
                             _ => panic!("Invalid")
                         }
                     }
-                    1 => {
+                    Mirror::Vertical => {
                         match location {
                             0x2000..=0x23FF => self.nametables[(location as usize - 0x2000)],
                             0x2400..=0x27FF => self.nametables[(location as usize - 0x2000)],
@@ -564,13 +565,13 @@ impl PPU {
             },
             0x2000..=0x3EFF => {
                 let mirror_mode = match self.cartridge {
-                    Some(ref cart) => cart.borrow().mirroring,
+                    Some(ref cart) => cart.borrow().mirror_mode(),
                     _ => panic!("Unable to get cartridge mirror mode")
                 };
                 let location = (address % 0x1000) + 0x2000;
                 let new_location: u16;
                 match mirror_mode {
-                    0 => {
+                    Mirror::Horizontal => {
                         new_location = match location {
                             0x2000..=0x23FF => location - 0x2000,
                             0x2400..=0x27FF => location - 0x2400,
@@ -579,7 +580,7 @@ impl PPU {
                             _ => 0
                         };
                     },
-                    1 => {
+                    Mirror::Vertical => {
                         new_location = match location {
                             0x2000..=0x23FF => location - 0x2000,
                             0x2400..=0x27FF => location - 0x2000,
