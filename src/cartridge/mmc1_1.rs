@@ -14,7 +14,8 @@ pub struct MMC1 {
 
 impl MMC1 {
     pub fn new(mut data: RomData) -> MMC1 {
-        data.prg_rom.resize(0x8000, 0); // this is not right
+        data.prg_ram.resize(0x8000, 0);
+        data.chr_ram.resize(0x2000, 0);
 
         MMC1 {
             data: data,
@@ -53,7 +54,12 @@ impl Mapper for MMC1 {
     }
 
     fn chr_read(&self, address: u16) -> u8 {
-        self.data.chr_rom[address as usize]
+        if self.data.header.chr_rom_size == 0 {
+            self.data.chr_ram[address as usize]
+        }
+        else {
+            self.data.chr_rom[address as usize]
+        }
     }
 
     fn chr_write(&mut self, address: u16, contents: u8) {
@@ -99,7 +105,7 @@ impl MMC1 {
             },
             _ => panic!("Invalid addressing mode")
         };
-
+        
         self.data.prg_rom[(0x4000 * page as usize) + address as usize]
     }
 
