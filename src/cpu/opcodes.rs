@@ -94,10 +94,10 @@ impl CPU {
 
     pub fn bit(&mut self, mode: Mode) -> u8 {
         let (address, _) = self.set_mode(mode);
-        let result = self.bus.get_memory(address) & self.a;
+        let result = self.bus.get_memory(address);
         if result & 0b10000000 == 0b10000000 { self.set_negative(true); } else { self.set_negative(false); }
-        self.p = (self.p & 0x3F) | self.bus.get_memory(address) & 0xC0;
-        if result == 0 { self.set_zero(true); } else { self.set_zero(false); }
+        if (result >> 6) & 1 != 0 { self.set_overflow(true); } else { self.set_overflow(false); }
+        if (result & self.a) == 0 { self.set_zero(true); } else { self.set_zero(false); }
         0
     }
 

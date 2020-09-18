@@ -47,22 +47,27 @@ impl Mapper for MMC1 {
 
     fn prg_write(&mut self, address: u16, contents: u8) {
         match address {
-            0x6000..=0x7FFF => { self.mmc1_write_prg_ram(address - 0x6000, contents) },
-            0x8000..=0xFFFF => { self.update_reg(address, contents); }
+            0x6000..=0x7FFF => self.mmc1_write_prg_ram(address - 0x6000, contents),
+            0x8000..=0xFFFF => self.update_reg(address, contents),
             _ => panic!("Unable to write to address: {:04x}", address)
         }
     }
 
     fn chr_read(&self, address: u16) -> u8 {
-        if self.data.header.chr_rom_size == 0 {
-            self.data.chr_ram[address as usize]
-        }
-        else {
-            self.data.chr_rom[address as usize]
-        }
+        let val = match address {
+            0x0000..=0x0FFF => self.mmc1_read_chr(AddressingMode::Low, address),
+            0x1000..=0x1FFF => self.mmc1_read_chr(AddressingMode::High, address - 0x1000),
+            _ => panic!("Can't read CHR ROM")
+        };
+        val
     }
 
     fn chr_write(&mut self, address: u16, contents: u8) {
+        match address {
+            0x0000..=0x0FFF => self.mmc1_write_chr_ram(AddressingMode::Low, address, contents),
+            0x1000..=0x1FFF => self.mmc1_write_chr_ram(AddressingMode::High, address - 0x1000, contents),
+            _ => panic!("Unable to write CHR RAM")
+        }
         self.data.chr_ram[address as usize] = contents;
     }
 
@@ -88,7 +93,7 @@ impl MMC1 {
     }
 
     fn mmc1_read_prg_rom(&self, addressing_mode: AddressingMode, address: u16) -> u8 {
-        let prg_mode = (self.ctrl & 0b1100) >> 2;
+        let prg_mode = (self.ctrl & 0b01100) >> 2;
 
         let page = match prg_mode {
             0..=1 => match addressing_mode {
@@ -107,6 +112,47 @@ impl MMC1 {
         };
         
         self.data.prg_rom[(0x4000 * page as usize) + address as usize]
+    }
+
+    fn mmc1_read_chr(&self, addressing_mode: AddressingMode, address: u16) -> u8 {
+        let chr_mode = (self.ctrl & 0b10000) >> 4;
+
+        let page = match chr_mode {
+            0 => match addressing_mode {
+                AddressingMode::Low => self.chr_0,
+                AddressingMode::High => self.chr_0 + 1
+            },
+            1 => match addressing_mode {
+                AddressingMode::Low => self.chr_0,
+                AddressingMode::High => self.chr_1
+            },
+            _ => panic!("Invalid addressing mode")
+        };
+        
+        if self.data.header.chr_rom_size == 0 {
+            self.data.chr_ram[(0x1000 * page as usize) + address as usize]
+        }
+        else {
+            self.data.chr_rom[(0x1000 * page as usize) + address as usize]
+        }
+    }
+
+    fn mmc1_write_chr_ram(&mut self, addressing_mode: AddressingMode, address: u16, contents: u8) {
+        let chr_mode = (self.ctrl & 0b10000) >> 4;
+
+        let page = match chr_mode {
+            0 => match addressing_mode {
+                AddressingMode::Low => self.chr_0,
+                AddressingMode::High => self.chr_0 + 1,
+            },
+            1 => match addressing_mode {
+                AddressingMode::Low => self.chr_0,
+                AddressingMode::High => self.chr_1,
+            },
+            _ => panic!("Invalid addressing mode")
+        };
+
+        self.data.chr_ram[(0x1000 * page as usize) + address as usize] = contents;
     }
 
     fn update_reg(&mut self, address: u16, contents: u8) {
