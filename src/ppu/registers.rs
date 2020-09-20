@@ -64,28 +64,28 @@ impl PPU {
 
     pub fn write_ppu_scroll(&mut self, contents: u8) {
         if self.writing == false {
-            self.temp_address &= 0b1111111111100000;
+            self.temp_address &= 0b0111111111100000;
             self.temp_address |= (contents as u16) >> 3;
-            self.x_scroll = contents & 0b00000111;
+            self.x_scroll &= 0b11111000;
+            self.x_scroll |= 0b00000111 & contents;
             self.writing = true;
         }
         else {
-            self.temp_address &= 0b1000111111111111;
-            self.temp_address |= (contents as u16 & 0x07) << 12;
-            self.temp_address &= 0b1111110000011111;
-            self.temp_address |= (contents as u16 & 0xF8) << 2;
+            self.temp_address &= 0b0000110000011111;
+            self.temp_address |= (contents as u16 & 0b00000111) << 12;
+            self.temp_address |= (contents as u16 & 0b11111000) << 2;
             self.writing = false;
         }
     }
 
     pub fn write_ppu_addr(&mut self, contents: u8) {
         if self.writing == false {
-            self.temp_address &= 0b1000000011111111;
+            self.temp_address &= 0b0000000011111111;
             self.temp_address |= (contents as u16 & 0b00111111) << 8;
             self.writing = true;
         }
         else {
-            self.temp_address &= 0b1111111100000000;
+            self.temp_address &= 0b0111111100000000;
             self.temp_address |= contents as u16;
             self.vram_address = self.temp_address;
             self.writing = false;

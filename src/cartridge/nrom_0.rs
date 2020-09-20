@@ -20,7 +20,7 @@ impl Mapper for NROM {
             0x6000..=0x7FFF => self.data.prg_ram[address as usize - 0x6000],
             0x8000..=0xBFFF => self.data.prg_rom[address as usize - 0x8000],
             0xC000..=0xFFFF => self.data.prg_rom[self.data.prg_rom.len() - 0x4000 + (address as usize - 0xC000)],
-            _ => panic!("Invalid read! (0x{:x})", address)
+            _ => { println!("PRG Read out of bounds: ${:04x}", address); 0 } 
         };
         val
     }
