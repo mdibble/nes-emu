@@ -16,7 +16,7 @@ impl RomHeader {
             prg_rom_size: dump[4],
             chr_rom_size: dump[5],
             mapper_id: (dump[6] >> 4) | (dump[7] & 0xF0),
-            mirror_mode: dump[6],
+            mirror_mode: if dump[6] & 1 != 0 { 1 } else { 0 },
             battery: dump[6] & 0x02 != 0,
             trainer: dump[6] & 0x04 != 0,
             mirror_ignore: dump[6] & 0x08 != 0

@@ -25,7 +25,7 @@ use nes::NES;
 use std::fs;
 
 fn main() {
-    let cart_data = fs::read("roms/zelda.nes");
+    let cart_data = fs::read("roms/smb.nes");
 
     let cart_data = match cart_data {
         Ok(g) => g,

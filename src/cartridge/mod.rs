@@ -1,12 +1,14 @@
 mod mapper;
 mod nrom_0;
 mod mmc1_1;
+mod uxrom_2;
 mod rom_data;
 mod rom_header;
 
 use self::mapper::Mapper;
 use self::nrom_0::NROM;
 use self::mmc1_1::MMC1;
+use self::uxrom_2::UxROM;
 use self::rom_data::RomData;
 
 pub enum Mirror {
@@ -27,6 +29,7 @@ impl Cartridge {
         let mapper: Box<dyn Mapper> = match rom_data.header.mapper_id {
             0 => Box::new(NROM::new(rom_data)),
             1 => Box::new(MMC1::new(rom_data)),
+            2 => Box::new(UxROM::new(rom_data)),
             _ => panic!("Mapper isn't supported")
         };
     
